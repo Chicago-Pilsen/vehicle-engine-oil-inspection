@@ -185,229 +185,185 @@ function PhotoTile({ label, icon, desc, photo, onCapture, required=true, compact
   );
 }
 
-// ─── REALISTIC Dipstick Gauge ─────────────────────────────────────────────────
+// ─── VERTICAL Dipstick — points downward like a real engine dipstick ──────────
+// Handle ring at TOP. Stick goes DOWN. Tip (pointed) at BOTTOM.
+// Crosshatch diamond pattern ONLY in the center zone between L (low, lower) and F (full, upper).
+// Oil fill rises from the BOTTOM (tip) upward — more oil = higher level.
+// L mark is BELOW F mark (low = closer to tip = lower on stick).
 function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelChange, onColorChange }) {
   const fillColor = colors[colorIdx] || colors[0];
 
-  // Canvas dimensions
-  const SVG_W = 220, SVG_H = 360;
-  const cx = 80; // center X of stick
-
-  // Stick geometry — thin, tapered like a real dipstick
-  const stickW = 14;       // narrow metal rod
-  const stickTop = 68;     // below handle/neck
-  const stickBot = 310;    // before tip
+  // SVG geometry — vertical stick
+  const SVG_W = 200, SVG_H = 340;
+  const stickX = 72;   // center X of stick
+  const stickW = 32;   // width of stick body
+  const stickTop = 52; // y where stick body starts (below handle)
+  const stickBot = 290;// y where stick body ends (before pointed tip)
   const stickH = stickBot - stickTop;
 
-  // Measurement zone — between F (full/upper) and L (low/lower)
-  const fMarkY = stickTop + Math.round(stickH * 0.30);
-  const lMarkY = stickTop + Math.round(stickH * 0.60);
+  // The measurement zone (crosshatch area) — center portion of stick
+  // F (full) mark is HIGHER on the stick (lower Y value)
+  // L (low)  mark is LOWER  on the stick (higher Y value)
+  const fMarkY = stickTop + Math.round(stickH * 0.28); // F = upper mark (~28% from top)
+  const lMarkY = stickTop + Math.round(stickH * 0.62); // L = lower mark (~62% from top)
   const hatchTop = fMarkY;
   const hatchBot = lMarkY;
-  const hatchH = hatchBot - hatchTop;
+  const hatchH   = hatchBot - hatchTop;
 
-  // Oil fill — rises from bottom tip upward
+  // Oil level: 0% = tip of stick (stickBot), 100% = top of stick (stickTop)
+  // Fill rises from bottom. The fill Y start = stickBot - (level/100)*stickH
   const fillTopY = stickBot - Math.round((level / 100) * stickH);
 
-  // Status
-  const statusLabel = level < 30 ? "ADD OIL" : level < 44 ? "LOW" : level <= 72 ? "O.K." : "TOO FULL";
-  const statusColor = level < 30 ? "#ef4444" : level < 44 ? "#f97316" : level <= 72 ? "#22c55e" : "#eab308";
+  const uid = "EngineOil";
 
-  // Sheen highlight x positions on stick
-  const shineX = cx - stickW/2 + 2;
+  // Status based on where level lands relative to L and F marks
+  const statusLabel = level < 28  ? "ADD OIL"  :
+                      level < 42  ? "LOW"       :
+                      level <= 72 ? "O.K."      : "TOO FULL";
+  const statusColor = level < 28  ? "#ef4444"   :
+                      level < 42  ? "#f97316"   :
+                      level <= 72 ? "#22c55e"   : "#eab308";
+
+  // Arrow indicator Y (current oil surface)
+  const arrowY = fillTopY;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, width:"100%" }}>
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:6, width:"100%" }}>
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:8, width:"100%" }}>
 
-        {/* ── REALISTIC DIPSTICK SVG ── */}
+        {/* ── DIPSTICK SVG ── */}
         <svg width={SVG_W} height={SVG_H} style={{ overflow:"visible", flexShrink:0 }}>
           <defs>
-            {/* Metal gradient for stick body — gives 3D round rod look */}
-            <linearGradient id="metalGrad" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%"   stopColor="#2d3748"/>
-              <stop offset="15%"  stopColor="#718096"/>
-              <stop offset="35%"  stopColor="#e2e8f0"/>
-              <stop offset="50%"  stopColor="#f7fafc"/>
-              <stop offset="65%"  stopColor="#cbd5e0"/>
-              <stop offset="85%"  stopColor="#4a5568"/>
-              <stop offset="100%" stopColor="#1a202c"/>
-            </linearGradient>
-            {/* Handle gradient — yellow/orange loop like real dipsticks */}
-            <linearGradient id="handleGrad" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%"   stopColor="#92400e"/>
-              <stop offset="20%"  stopColor="#f59e0b"/>
-              <stop offset="50%"  stopColor="#fef08a"/>
-              <stop offset="80%"  stopColor="#f59e0b"/>
-              <stop offset="100%" stopColor="#78350f"/>
-            </linearGradient>
-            {/* Oil fill gradient — translucent, darker at bottom */}
-            <linearGradient id={`oilGrad-${colorIdx}`} x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%"   stopColor={fillColor} stopOpacity={colorIdx===0?0.55:0.75}/>
-              <stop offset="100%" stopColor={fillColor} stopOpacity={colorIdx===0?0.80:0.98}/>
-            </linearGradient>
-            {/* Neck gradient */}
-            <linearGradient id="neckGrad" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%"   stopColor="#1a202c"/>
-              <stop offset="40%"  stopColor="#718096"/>
-              <stop offset="60%"  stopColor="#a0aec0"/>
-              <stop offset="100%" stopColor="#2d3748"/>
-            </linearGradient>
-            {/* Hatch zone overlay — etched/darker area */}
-            <linearGradient id="hatchBg" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%"   stopColor="#000" stopOpacity="0.5"/>
-              <stop offset="30%"  stopColor="#000" stopOpacity="0.15"/>
-              <stop offset="70%"  stopColor="#000" stopOpacity="0.15"/>
-              <stop offset="100%" stopColor="#000" stopOpacity="0.5"/>
-            </linearGradient>
-
-            {/* Clip to stick body */}
-            <clipPath id="stickClip">
-              <rect x={cx-stickW/2} y={stickTop} width={stickW} height={stickH+30} rx={2}/>
+            {/* Clip to stick body rectangle */}
+            <clipPath id="ds-stick-body">
+              <rect x={stickX - stickW/2} y={stickTop} width={stickW} height={stickH + 20}/>
             </clipPath>
             {/* Clip to hatch zone only */}
-            <clipPath id="hatchClip">
-              <rect x={cx-stickW/2} y={hatchTop} width={stickW} height={hatchH}/>
-            </clipPath>
-            {/* Clip to tip triangle */}
-            <clipPath id="tipClip">
-              <polygon points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}/>
+            <clipPath id="ds-hatch-zone">
+              <rect x={stickX - stickW/2} y={hatchTop} width={stickW} height={hatchH}/>
             </clipPath>
           </defs>
 
-          {/* ══ HANDLE — yellow pull-loop like real engine dipstick ══ */}
-          {/* Outer ring shadow */}
-          <ellipse cx={cx} cy={26} rx={22} ry={16} fill="#78350f" opacity={0.5}/>
-          {/* Main ring */}
-          <ellipse cx={cx} cy={24} rx={21} ry={15} fill="url(#handleGrad)" stroke="#92400e" strokeWidth={1.5}/>
-          {/* Inner hollow */}
-          <ellipse cx={cx} cy={24} rx={13} ry={8} fill="#0f172a"/>
-          {/* Shine on handle */}
-          <ellipse cx={cx-4} cy={20} rx={5} ry={3} fill="#fef9c3" opacity={0.5}/>
-          {/* Brand text on handle */}
-          <text x={cx} y={27} textAnchor="middle" fill="#92400e" fontSize={6} fontWeight="800" letterSpacing="0.05em">OIL</text>
+          {/* ── HANDLE RING at top ── */}
+          {/* Outer ring */}
+          <ellipse cx={stickX} cy={22} rx={18} ry={13} fill="#64748b" stroke="#94a3b8" strokeWidth={1.5}/>
+          {/* Inner hole */}
+          <ellipse cx={stickX} cy={22} rx={10} ry={7} fill="#0f172a"/>
+          {/* Neck connecting ring to stick */}
+          <rect x={stickX - 5} y={30} width={10} height={stickTop - 28} rx={3} fill="#5a6a7a"/>
 
-          {/* ══ NECK — tapers from handle down to stick ══ */}
-          <path d={`M ${cx-8} 36 L ${cx-stickW/2} ${stickTop} L ${cx+stickW/2} ${stickTop} L ${cx+8} 36 Z`}
-            fill="url(#neckGrad)" stroke="#4a5568" strokeWidth={0.8}/>
-          {/* Neck highlight */}
-          <path d={`M ${cx-2} 36 L ${cx-stickW/2+1} ${stickTop}`}
-            stroke="#a0aec0" strokeWidth={1} opacity={0.6}/>
+          {/* ── STICK BODY (metal rod) ── */}
+          <rect x={stickX - stickW/2} y={stickTop} width={stickW} height={stickH}
+            fill="#1a2535" stroke="#475569" strokeWidth={1.5} rx={3}/>
 
-          {/* ══ STICK BODY — metal rod with 3D gradient ══ */}
-          <rect x={cx-stickW/2} y={stickTop} width={stickW} height={stickH}
-            fill="url(#metalGrad)" rx={2}/>
+          {/* ── POINTED TIP at bottom ── */}
+          <polygon
+            points={`${stickX-stickW/2},${stickBot} ${stickX+stickW/2},${stickBot} ${stickX},${stickBot+22}`}
+            fill="#1a2535" stroke="#475569" strokeWidth={1.5}/>
 
-          {/* ══ OIL FILL — coats the bottom portion of stick ══ */}
-          {/* Main oil fill */}
+          {/* ── OIL FILL — rises from tip upward ── */}
           <rect
-            x={cx-stickW/2+1} y={fillTopY}
-            width={stickW-2} height={Math.max(0, stickBot-fillTopY)}
-            fill={`url(#oilGrad-${colorIdx})`}
-            clipPath="url(#stickClip)"
-            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
-
-          {/* Oil surface meniscus — curved top of oil */}
-          <ellipse cx={cx} cy={fillTopY} rx={stickW/2-1} ry={3}
-            fill={fillColor} opacity={colorIdx===0?0.65:0.85}
-            style={{transition:"cy 0.4s ease"}}/>
-
-          {/* Oil sheen highlight */}
-          <rect x={shineX} y={fillTopY+2} width={2} height={Math.max(0,stickBot-fillTopY-8)}
-            fill="#fff" opacity={0.18} clipPath="url(#stickClip)"
-            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
-
-          {/* ══ POINTED TIP ══ */}
-          {/* Metal tip */}
+            x={stickX - stickW/2 + 1}
+            y={fillTopY}
+            width={stickW - 2}
+            height={stickBot - fillTopY}
+            fill={fillColor}
+            opacity={colorIdx === 0 ? 0.70 : 0.92}
+            clipPath="url(#ds-stick-body)"
+            style={{ transition:"y 0.35s ease, height 0.35s ease" }}
+          />
+          {/* Oil fill continues into tip polygon — separate fill */}
           <polygon
-            points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}
-            fill="url(#metalGrad)"/>
-          {/* Oil on tip */}
-          <polygon
-            points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}
-            fill={fillColor} opacity={colorIdx===0?0.50:0.80}
-            clipPath="url(#tipClip)"/>
-          {/* Oil drip at very tip */}
-          <ellipse cx={cx} cy={stickBot+28} rx={3} ry={4}
-            fill={fillColor} opacity={colorIdx===0?0.40:0.70}/>
+            points={`${stickX-stickW/2},${stickBot} ${stickX+stickW/2},${stickBot} ${stickX},${stickBot+22}`}
+            fill={fillColor} opacity={colorIdx === 0 ? 0.60 : 0.88}
+          />
 
-          {/* ══ HATCH ZONE — etched measurement area ══ */}
-          {/* Dark etched background */}
-          <rect x={cx-stickW/2} y={hatchTop} width={stickW} height={hatchH}
-            fill="url(#hatchBg)" clipPath="url(#stickClip)"/>
+          {/* ── HATCH ZONE dark overlay (so crosshatch shows clearly) ── */}
+          <rect x={stickX - stickW/2} y={hatchTop} width={stickW} height={hatchH}
+            fill="#0a1020" opacity={0.35} clipPath="url(#ds-stick-body)"/>
 
-          {/* Diamond crosshatch ONLY in center zone */}
-          <g clipPath="url(#hatchClip)">
-            {Array.from({length:20}).map((_,i)=>{
-              const sp=9, sy = hatchTop - stickW + i*sp;
+          {/* ── DIAMOND CROSSHATCH — ONLY in center zone between L and F ── */}
+          <g clipPath="url(#ds-hatch-zone)">
+            {Array.from({ length: 22 }).map((_, i) => {
+              const sp = 10;
+              const startY = hatchTop - stickW + i * sp;
               return [
-                <line key={`ha${i}`} x1={cx-stickW/2} y1={sy} x2={cx+stickW/2} y2={sy+stickW}
-                  stroke="#fff" strokeWidth={0.7} opacity={0.45}/>,
-                <line key={`hb${i}`} x1={cx+stickW/2} y1={sy} x2={cx-stickW/2} y2={sy+stickW}
-                  stroke="#fff" strokeWidth={0.7} opacity={0.45}/>,
+                // top-left → bottom-right diagonal
+                <line key={`x1-${i}`}
+                  x1={stickX - stickW/2} y1={startY}
+                  x2={stickX + stickW/2} y2={startY + stickW}
+                  stroke="#ffffff" strokeWidth={0.9} opacity={0.38}/>,
+                // top-right → bottom-left diagonal
+                <line key={`x2-${i}`}
+                  x1={stickX + stickW/2} y1={startY}
+                  x2={stickX - stickW/2} y2={startY + stickW}
+                  stroke="#ffffff" strokeWidth={0.9} opacity={0.38}/>,
               ];
             })}
           </g>
-          {/* Etched zone top/bottom border lines */}
-          <line x1={cx-stickW/2-1} y1={hatchTop} x2={cx+stickW/2+1} y2={hatchTop}
-            stroke="#e2e8f0" strokeWidth={1.5}/>
-          <line x1={cx-stickW/2-1} y1={hatchBot} x2={cx+stickW/2+1} y2={hatchBot}
-            stroke="#e2e8f0" strokeWidth={1.5}/>
 
-          {/* ══ METAL SHEEN on top of everything — makes it look polished ══ */}
-          <rect x={cx-stickW/2} y={stickTop} width={3} height={stickH}
-            fill="#fff" opacity={0.12} rx={1} clipPath="url(#stickClip)"/>
+          {/* Hatch zone border lines (horizontal, left+right edges) */}
+          <line x1={stickX-stickW/2} y1={hatchTop} x2={stickX+stickW/2} y2={hatchTop} stroke="#94a3b8" strokeWidth={1.2}/>
+          <line x1={stickX-stickW/2} y1={hatchBot} x2={stickX+stickW/2} y2={hatchBot} stroke="#94a3b8" strokeWidth={1.2}/>
 
-          {/* ══ F MARK — FULL (upper) ══ */}
-          <line x1={cx-stickW/2-10} y1={fMarkY} x2={cx+stickW/2+10} y2={fMarkY}
-            stroke="#22c55e" strokeWidth={2}/>
-          {/* Notch cut into stick at F */}
-          <rect x={cx-stickW/2-2} y={fMarkY-1} width={stickW+4} height={2} fill="#22c55e" opacity={0.8}/>
-          <text x={cx+stickW/2+16} y={fMarkY+4} fill="#22c55e" fontSize={13} fontWeight="900">F</text>
-          <text x={cx+stickW/2+30} y={fMarkY+4} fill="#64748b" fontSize={8}>Full</text>
+          {/* ── F mark (FULL — upper mark) ── */}
+          <line x1={stickX - stickW/2 - 8} y1={fMarkY} x2={stickX + stickW/2 + 8} y2={fMarkY}
+            stroke="#22c55e" strokeWidth={1.8}/>
+          {/* F label — right side */}
+          <text x={stickX + stickW/2 + 14} y={fMarkY + 4} fill="#22c55e" fontSize={12} fontWeight="700">F</text>
+          <text x={stickX + stickW/2 + 28} y={fMarkY + 4} fill="#94a3b8" fontSize={8}>Full level</text>
 
-          {/* ══ L MARK — LOW (lower) ══ */}
-          <line x1={cx-stickW/2-10} y1={lMarkY} x2={cx+stickW/2+10} y2={lMarkY}
-            stroke="#f87171" strokeWidth={2}/>
-          <rect x={cx-stickW/2-2} y={lMarkY-1} width={stickW+4} height={2} fill="#f87171" opacity={0.8}/>
-          <text x={cx+stickW/2+16} y={lMarkY+4} fill="#f87171" fontSize={13} fontWeight="900">L</text>
-          <text x={cx+stickW/2+30} y={lMarkY+4} fill="#64748b" fontSize={8}>Low</text>
+          {/* ── L mark (LOW — lower mark) ── */}
+          <line x1={stickX - stickW/2 - 8} y1={lMarkY} x2={stickX + stickW/2 + 8} y2={lMarkY}
+            stroke="#f87171" strokeWidth={1.8}/>
+          {/* L label — right side */}
+          <text x={stickX + stickW/2 + 14} y={lMarkY + 4} fill="#f87171" fontSize={12} fontWeight="700">L</text>
+          <text x={stickX + stickW/2 + 28} y={lMarkY + 4} fill="#94a3b8" fontSize={8}>Low level</text>
 
-          {/* Mid tick marks between L and F */}
-          {[0.25,0.5,0.75].map((t,i)=>{
-            const y = hatchTop + hatchH*t;
-            return <line key={i} x1={cx-stickW/2-5} y1={y} x2={cx+stickW/2+5} y2={y}
-              stroke="#94a3b8" strokeWidth={0.8} strokeDasharray="2 1"/>;
-          })}
+          {/* ── Arrow indicator pointing DOWN to current oil surface ── */}
+          {/* Arrow shaft */}
+          <line
+            x1={stickX - stickW/2 - 22} y1={arrowY - 18}
+            x2={stickX - stickW/2 - 22} y2={arrowY - 4}
+            stroke={statusColor} strokeWidth={2.5} strokeLinecap="round"
+            style={{ transition:"y1 0.35s ease, y2 0.35s ease" }}/>
+          {/* Arrowhead pointing DOWN ▼ */}
+          <polygon
+            points={`
+              ${stickX - stickW/2 - 28},${arrowY - 4}
+              ${stickX - stickW/2 - 16},${arrowY - 4}
+              ${stickX - stickW/2 - 22},${arrowY + 4}
+            `}
+            fill={statusColor}
+            style={{ transition:"all 0.35s ease" }}/>
+          {/* Arrow level % label */}
+          <text x={stickX - stickW/2 - 22} y={arrowY - 22}
+            textAnchor="middle" fill={statusColor} fontSize={9} fontWeight="700"
+            style={{ transition:"y 0.35s ease" }}>{level}%</text>
 
-          {/* ══ ARROW INDICATOR — points down to oil surface ══ */}
-          <g style={{transition:"transform 0.4s ease"}} transform={`translate(0, ${fillTopY - 68})`}>
-            {/* Shaft */}
-            <line x1={cx-stickW/2-24} y1={52} x2={cx-stickW/2-24} y2={66}
-              stroke={statusColor} strokeWidth={2.5} strokeLinecap="round"/>
-            {/* Arrowhead ▼ */}
-            <polygon
-              points={`${cx-stickW/2-30},64 ${cx-stickW/2-18},64 ${cx-stickW/2-24},72`}
-              fill={statusColor}/>
-            {/* Percentage label */}
-            <text x={cx-stickW/2-24} y={48} textAnchor="middle"
-              fill={statusColor} fontSize={10} fontWeight="800">{level}%</text>
-          </g>
-
-          {/* ══ STATUS BADGE at bottom ══ */}
-          <rect x={cx-38} y={SVG_H-26} width={76} height={20} rx={10}
-            fill={`${statusColor}20`} stroke={statusColor} strokeWidth={1.5}/>
-          <text x={cx} y={SVG_H-12} textAnchor="middle" fill={statusColor} fontSize={11} fontWeight="800">
+          {/* ── Status badge ── */}
+          <rect x={stickX - 36} y={SVG_H - 28} width={72} height={20} rx={10}
+            fill={`${statusColor}22`} stroke={statusColor} strokeWidth={1}/>
+          <text x={stickX} y={SVG_H - 14} textAnchor="middle" fill={statusColor} fontSize={11} fontWeight="700">
             {statusLabel}
           </text>
+
+          {/* Minor tick marks on right edge of stick */}
+          {Array.from({ length: 9 }).map((_, i) => {
+            const y = stickTop + Math.round(((i+1)/10) * stickH);
+            return <line key={i}
+              x1={stickX + stickW/2} y1={y}
+              x2={stickX + stickW/2 + 5} y2={y}
+              stroke="#334155" strokeWidth={1}/>;
+          })}
         </svg>
 
-        {/* ── Vertical slider ── */}
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop:stickTop+10 }}>
+        {/* ── Vertical slider (right of stick) ── */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop: stickTop + 10 }}>
           <span style={{ fontSize:9, color:"#64748b", fontWeight:700 }}>FULL</span>
           <input type="range" min={0} max={100} value={level}
             onChange={e => onLevelChange(parseInt(e.target.value))}
-            style={{ writingMode:"vertical-lr", direction:"rtl", width:22, height:stickH-20, cursor:"pointer", accentColor:fillColor }}/>
+            style={{ writingMode:"vertical-lr", direction:"rtl", width:22, height:stickH - 20, cursor:"pointer", accentColor:fillColor }}/>
           <span style={{ fontSize:9, color:"#64748b", fontWeight:700 }}>LOW</span>
         </div>
       </div>
@@ -1003,18 +959,7 @@ ${fluidPhotoHTML ? `
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [info, setInfo] = useState(() => {
-    // Load saved VIN from browser memory on first load
-    const savedVin = localStorage.getItem("oil_inspection_vin") || "";
-    const savedMake = localStorage.getItem("oil_inspection_make") || "";
-    const savedModel = localStorage.getItem("oil_inspection_model") || "";
-    const savedYear = localStorage.getItem("oil_inspection_year") || "";
-    return {
-      custName:"", custPhone:"", custEmail:"", custAddress:"",
-      year: savedYear, make: savedMake, model: savedModel,
-      vin: savedVin, techName:""
-    };
-  });
+  const [info, setInfo] = useState({ custName:"", custPhone:"", custEmail:"", custAddress:"", year:"", make:"", model:"", vin:"", techName:"" });
   const [miles, setMiles] = useState("");
   const [vehiclePhotos, setVehiclePhotos] = useState({});
   const [wheelPhotos, setWheelPhotos] = useState({});
@@ -1029,14 +974,7 @@ export default function App() {
     }]))
   );
 
-  const upInfo = (k, v) => {
-    setInfo(p => ({ ...p, [k]:v }));
-    // Persist vehicle identity fields to browser memory
-    if (k === "vin")   localStorage.setItem("oil_inspection_vin",   v);
-    if (k === "make")  localStorage.setItem("oil_inspection_make",  v);
-    if (k === "model") localStorage.setItem("oil_inspection_model", v);
-    if (k === "year")  localStorage.setItem("oil_inspection_year",  v);
-  };
+  const upInfo  = (k, v) => setInfo(p => ({ ...p, [k]:v }));
   const upFluid = (id, p) => setFluidStates(s => ({ ...s, [id]:{ ...s[id], ...p } }));
 
   // ── VIN lookup via NHTSA (with no-cors fallback) ──
@@ -1147,20 +1085,11 @@ export default function App() {
                 {vinLoading ? "⏳ Looking up…" : "🔍 Decode VIN"}
               </button>
             </div>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
               <span style={{ fontSize:10, color: isValidVin(info.vin)?"#22c55e":info.vin.length>0?"#f87171":"#475569" }}>
                 {info.vin.length}/17 characters
                 {isValidVin(info.vin) ? " ✓" : info.vin.length > 0 ? ` — need ${17-info.vin.length} more` : ""}
               </span>
-              {isValidVin(info.vin) && (
-                <span style={{ fontSize:10, color:"#22c55e", display:"flex", alignItems:"center", gap:4 }}>
-                  💾 Saved to browser memory
-                  <button onClick={()=>{ localStorage.removeItem("oil_inspection_vin"); localStorage.removeItem("oil_inspection_make"); localStorage.removeItem("oil_inspection_model"); localStorage.removeItem("oil_inspection_year"); upInfo("vin",""); }}
-                    style={{ fontSize:9, color:"#f87171", background:"none", border:"none", cursor:"pointer", padding:0, textDecoration:"underline" }}>
-                    clear
-                  </button>
-                </span>
-              )}
             </div>
             {vinResult && !vinResult.error && (
               <div style={{ marginTop:6, fontSize:11, color:"#22c55e", background:"#052e16", borderRadius:8, padding:"8px 12px", lineHeight:1.5 }}>
