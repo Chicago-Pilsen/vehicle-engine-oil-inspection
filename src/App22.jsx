@@ -25,91 +25,7 @@ const KNOWN_MAKES = [
 ];
 
 const FLUIDS = [
-  {
-    id:"engineOil", label:"Engine Oil", icon:"🛢️", type:"dipstick",
-    // Base colors for swatches — but actual rendering uses OIL_PAINT below
-    colors:["#f5f0c8","#d4960a","#7a3a08","#0e0704"],
-    colorLabels:["New / Clear Light Yellow","Amber / Honey (good)","Dark Brown (aging)","Black / Sludge — change now"],
-    intervals:[5000], critical:true,
-    notes:"Check viscosity, level, color. Milky appearance = coolant contamination. Very light yellow = freshly changed. Darkening to black = needs change."
-  },
-];
-
-// ── Photorealistic oil paint definitions per condition ─────────────────────────
-// Each entry has: multiple gradient stops, specular color, opacity, rim color
-const OIL_PAINT = [
-  // 0 — New / Clear Light Yellow — thin, almost transparent, pale straw
-  {
-    stops:[
-      {o:"0%",   c:"#f9f3c4", a:0.28},
-      {o:"18%",  c:"#f0e68c", a:0.38},
-      {o:"45%",  c:"#e8d84a", a:0.32},
-      {o:"72%",  c:"#d4c520", a:0.42},
-      {o:"100%", c:"#c8b800", a:0.48},
-    ],
-    specular:"#fffff0",
-    specularOpacity: 0.55,
-    rimLight:"#f5f0a0",
-    meniscusColor:"#f0e870",
-    meniscusOpacity: 0.50,
-    dripOpacity: 0.35,
-    shineOpacity: 0.45,
-    label:"New / Clear Light Yellow",
-  },
-  // 1 — Amber / Honey — warm golden-brown, semi-transparent, rich color
-  {
-    stops:[
-      {o:"0%",   c:"#c87d00", a:0.72},
-      {o:"20%",  c:"#d4860a", a:0.82},
-      {o:"40%",  c:"#b86800", a:0.88},
-      {o:"60%",  c:"#9a5200", a:0.92},
-      {o:"85%",  c:"#7a3e00", a:0.95},
-      {o:"100%", c:"#5c2e00", a:0.98},
-    ],
-    specular:"#ffd966",
-    specularOpacity: 0.50,
-    rimLight:"#e8a020",
-    meniscusColor:"#c8780a",
-    meniscusOpacity: 0.80,
-    dripOpacity: 0.75,
-    shineOpacity: 0.30,
-    label:"Amber / Honey (good)",
-  },
-  // 2 — Dark Brown — opaque, very dark, slight reddish undertone
-  {
-    stops:[
-      {o:"0%",   c:"#5c2800", a:0.90},
-      {o:"25%",  c:"#4a1e00", a:0.94},
-      {o:"55%",  c:"#361400", a:0.97},
-      {o:"80%",  c:"#280e00", a:0.98},
-      {o:"100%", c:"#1a0800", a:1.00},
-    ],
-    specular:"#c86030",
-    specularOpacity: 0.22,
-    rimLight:"#8b3a10",
-    meniscusColor:"#5c2800",
-    meniscusOpacity: 0.92,
-    dripOpacity: 0.88,
-    shineOpacity: 0.14,
-    label:"Dark Brown (aging)",
-  },
-  // 3 — Black / Sludge — fully opaque matte black, zero transparency
-  {
-    stops:[
-      {o:"0%",   c:"#1a1008", a:0.97},
-      {o:"30%",  c:"#120a04", a:0.99},
-      {o:"70%",  c:"#0a0600", a:1.00},
-      {o:"100%", c:"#050300", a:1.00},
-    ],
-    specular:"#4a3020",
-    specularOpacity: 0.12,
-    rimLight:"#2a1808",
-    meniscusColor:"#1a1008",
-    meniscusOpacity: 0.98,
-    dripOpacity: 0.96,
-    shineOpacity: 0.06,
-    label:"Black / Sludge — change now",
-  },
+  { id:"engineOil", label:"Engine Oil", icon:"🛢️", type:"dipstick", colors:["#fefde8","#f5d060","#b45309","#100500"], colorLabels:["New / Clear Yellow","Amber (good)","Dark Brown","Black/Sludge — change now"], intervals:[5000], critical:true, notes:"Check viscosity, level, color. Milky appearance = coolant contamination. Very light yellow = freshly changed. Darkening to black = needs change." },
 ];
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -274,7 +190,7 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
   const fillColor = colors[colorIdx] || colors[0];
 
   // Canvas dimensions
-  const SVG_W = 220, SVG_H = 400;
+  const SVG_W = 220, SVG_H = 360;
   const cx = 80; // center X of stick
 
   // Stick geometry — thin, tapered like a real dipstick
@@ -299,10 +215,6 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
 
   // Sheen highlight x positions on stick
   const shineX = cx - stickW/2 + 2;
-
-  // Photorealistic oil paint for this condition
-  const paint = OIL_PAINT[colorIdx] || OIL_PAINT[1];
-  const gradId = `oilReal-${colorIdx}`;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, width:"100%" }}>
@@ -329,6 +241,11 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
               <stop offset="80%"  stopColor="#f59e0b"/>
               <stop offset="100%" stopColor="#78350f"/>
             </linearGradient>
+            {/* Oil fill gradient — translucent, darker at bottom */}
+            <linearGradient id={`oilGrad-${colorIdx}`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%"   stopColor={fillColor} stopOpacity={colorIdx===0?0.55:0.75}/>
+              <stop offset="100%" stopColor={fillColor} stopOpacity={colorIdx===0?0.80:0.98}/>
+            </linearGradient>
             {/* Neck gradient */}
             <linearGradient id="neckGrad" x1="0" x2="1" y1="0" y2="0">
               <stop offset="0%"   stopColor="#1a202c"/>
@@ -344,27 +261,6 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
               <stop offset="100%" stopColor="#000" stopOpacity="0.5"/>
             </linearGradient>
 
-            {/* ── PHOTOREALISTIC OIL GRADIENT (vertical, top=lighter, bottom=darker) ── */}
-            <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
-              {paint.stops.map((s,i) => (
-                <stop key={i} offset={s.o} stopColor={s.c} stopOpacity={s.a}/>
-              ))}
-            </linearGradient>
-
-            {/* Specular highlight gradient — left-side bright streak */}
-            <linearGradient id={`oilSpec-${colorIdx}`} x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%"   stopColor={paint.specular} stopOpacity={paint.specularOpacity}/>
-              <stop offset="40%"  stopColor={paint.specular} stopOpacity={paint.specularOpacity * 0.6}/>
-              <stop offset="100%" stopColor={paint.specular} stopOpacity="0"/>
-            </linearGradient>
-
-            {/* Rim light gradient — right edge warm glow */}
-            <linearGradient id={`oilRim-${colorIdx}`} x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%"   stopColor={paint.rimLight} stopOpacity="0"/>
-              <stop offset="70%"  stopColor={paint.rimLight} stopOpacity="0.15"/>
-              <stop offset="100%" stopColor={paint.rimLight} stopOpacity="0.35"/>
-            </linearGradient>
-
             {/* Clip to stick body */}
             <clipPath id="stickClip">
               <rect x={cx-stickW/2} y={stickTop} width={stickW} height={stickH+30} rx={2}/>
@@ -377,90 +273,70 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
             <clipPath id="tipClip">
               <polygon points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}/>
             </clipPath>
-            {/* Clip to oil fill area only */}
-            <clipPath id={`oilClip-${colorIdx}`}>
-              <rect x={cx-stickW/2} y={fillTopY} width={stickW} height={stickBot-fillTopY+28}/>
-            </clipPath>
           </defs>
 
           {/* ══ HANDLE — yellow pull-loop like real engine dipstick ══ */}
+          {/* Outer ring shadow */}
           <ellipse cx={cx} cy={26} rx={22} ry={16} fill="#78350f" opacity={0.5}/>
+          {/* Main ring */}
           <ellipse cx={cx} cy={24} rx={21} ry={15} fill="url(#handleGrad)" stroke="#92400e" strokeWidth={1.5}/>
+          {/* Inner hollow */}
           <ellipse cx={cx} cy={24} rx={13} ry={8} fill="#0f172a"/>
+          {/* Shine on handle */}
           <ellipse cx={cx-4} cy={20} rx={5} ry={3} fill="#fef9c3" opacity={0.5}/>
+          {/* Brand text on handle */}
           <text x={cx} y={27} textAnchor="middle" fill="#92400e" fontSize={6} fontWeight="800" letterSpacing="0.05em">OIL</text>
 
-          {/* ══ NECK ══ */}
+          {/* ══ NECK — tapers from handle down to stick ══ */}
           <path d={`M ${cx-8} 36 L ${cx-stickW/2} ${stickTop} L ${cx+stickW/2} ${stickTop} L ${cx+8} 36 Z`}
             fill="url(#neckGrad)" stroke="#4a5568" strokeWidth={0.8}/>
+          {/* Neck highlight */}
           <path d={`M ${cx-2} 36 L ${cx-stickW/2+1} ${stickTop}`}
             stroke="#a0aec0" strokeWidth={1} opacity={0.6}/>
 
-          {/* ══ STICK BODY — metal rod ══ */}
+          {/* ══ STICK BODY — metal rod with 3D gradient ══ */}
           <rect x={cx-stickW/2} y={stickTop} width={stickW} height={stickH}
             fill="url(#metalGrad)" rx={2}/>
 
-          {/* ══ PHOTOREALISTIC OIL FILL ══ */}
-          {/* Layer 1: Base oil body */}
-          <rect x={cx-stickW/2+1} y={fillTopY}
+          {/* ══ OIL FILL — coats the bottom portion of stick ══ */}
+          {/* Main oil fill */}
+          <rect
+            x={cx-stickW/2+1} y={fillTopY}
             width={stickW-2} height={Math.max(0, stickBot-fillTopY)}
-            fill={`url(#${gradId})`}
+            fill={`url(#oilGrad-${colorIdx})`}
             clipPath="url(#stickClip)"
             style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
 
-          {/* Layer 2: Specular highlight — left side bright streak (oil is glossy) */}
-          <rect x={cx-stickW/2+1} y={fillTopY}
-            width={stickW-2} height={Math.max(0, stickBot-fillTopY)}
-            fill={`url(#oilSpec-${colorIdx})`}
-            clipPath="url(#stickClip)"
-            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
-
-          {/* Layer 3: Rim light — right edge subtle warm bounce */}
-          <rect x={cx-stickW/2+1} y={fillTopY}
-            width={stickW-2} height={Math.max(0, stickBot-fillTopY)}
-            fill={`url(#oilRim-${colorIdx})`}
-            clipPath="url(#stickClip)"
-            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
-
-          {/* Layer 4: Thin bright center shine line running through oil */}
-          <rect x={cx-1} y={fillTopY+4}
-            width={2} height={Math.max(0, stickBot-fillTopY-12)}
-            fill={paint.specular} opacity={paint.shineOpacity * 0.4}
-            clipPath="url(#stickClip)"
-            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
-
-          {/* ══ OIL SURFACE MENISCUS — curved lip where oil meets air ══ */}
-          {/* Outer meniscus — darker curved shadow */}
-          <ellipse cx={cx} cy={fillTopY} rx={stickW/2-0.5} ry={4}
-            fill={paint.meniscusColor} opacity={paint.meniscusOpacity * 0.6}
-            style={{transition:"cy 0.4s ease"}}/>
-          {/* Inner meniscus — bright highlight on curved surface */}
-          <ellipse cx={cx} cy={fillTopY-1} rx={stickW/2-2} ry={2.5}
-            fill={paint.specular} opacity={paint.specularOpacity * 0.8}
-            style={{transition:"cy 0.4s ease"}}/>
-          {/* Tiny bright center spot on meniscus */}
-          <ellipse cx={cx-1} cy={fillTopY-1} rx={2} ry={1}
-            fill="#ffffff" opacity={paint.shineOpacity * 0.6}
+          {/* Oil surface meniscus — curved top of oil */}
+          <ellipse cx={cx} cy={fillTopY} rx={stickW/2-1} ry={3}
+            fill={fillColor} opacity={colorIdx===0?0.65:0.85}
             style={{transition:"cy 0.4s ease"}}/>
 
-          {/* ══ OIL ON TIP ══ */}
+          {/* Oil sheen highlight */}
+          <rect x={shineX} y={fillTopY+2} width={2} height={Math.max(0,stickBot-fillTopY-8)}
+            fill="#fff" opacity={0.18} clipPath="url(#stickClip)"
+            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
+
+          {/* ══ POINTED TIP ══ */}
+          {/* Metal tip */}
           <polygon
             points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}
-            fill={`url(#${gradId})`}/>
-          {/* Tip specular */}
+            fill="url(#metalGrad)"/>
+          {/* Oil on tip */}
           <polygon
             points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}
-            fill={`url(#oilSpec-${colorIdx})`}/>
-          {/* Oil drip at very tip — teardrop shape */}
-          <ellipse cx={cx} cy={stickBot+30} rx={3.5} ry={5}
-            fill={paint.meniscusColor} opacity={paint.dripOpacity}/>
-          {/* Drip highlight */}
-          <ellipse cx={cx-1} cy={stickBot+28} rx={1.2} ry={1.8}
-            fill={paint.specular} opacity={paint.specularOpacity * 0.6}/>
+            fill={fillColor} opacity={colorIdx===0?0.50:0.80}
+            clipPath="url(#tipClip)"/>
+          {/* Oil drip at very tip */}
+          <ellipse cx={cx} cy={stickBot+28} rx={3} ry={4}
+            fill={fillColor} opacity={colorIdx===0?0.40:0.70}/>
 
           {/* ══ HATCH ZONE — etched measurement area ══ */}
+          {/* Dark etched background */}
           <rect x={cx-stickW/2} y={hatchTop} width={stickW} height={hatchH}
             fill="url(#hatchBg)" clipPath="url(#stickClip)"/>
+
+          {/* Diamond crosshatch ONLY in center zone */}
           <g clipPath="url(#hatchClip)">
             {Array.from({length:20}).map((_,i)=>{
               const sp=9, sy = hatchTop - stickW + i*sp;
@@ -472,12 +348,13 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
               ];
             })}
           </g>
+          {/* Etched zone top/bottom border lines */}
           <line x1={cx-stickW/2-1} y1={hatchTop} x2={cx+stickW/2+1} y2={hatchTop}
             stroke="#e2e8f0" strokeWidth={1.5}/>
           <line x1={cx-stickW/2-1} y1={hatchBot} x2={cx+stickW/2+1} y2={hatchBot}
             stroke="#e2e8f0" strokeWidth={1.5}/>
 
-          {/* ══ METAL SHEEN — polished rod highlight on top of oil ══ */}
+          {/* ══ METAL SHEEN on top of everything — makes it look polished ══ */}
           <rect x={cx-stickW/2} y={stickTop} width={3} height={stickH}
             fill="#fff" opacity={0.12} rx={1} clipPath="url(#stickClip)"/>
 
@@ -535,42 +412,22 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
         </div>
       </div>
 
-      {/* ── Oil Color selector — realistic swatches ── */}
-      <div style={{ width:"100%", maxWidth:320 }}>
-        <div style={{ fontSize:10, color:"#64748b", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.06em" }}>Oil Color / Condition</div>
-        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          {OIL_PAINT.map((p, i) => {
-            const isSelected = colorIdx === i;
-            // Build a small CSS gradient for the swatch
-            const swatchGrad = p.stops.map(s => `${s.c}`);
-            const bg = i === 0
-              ? `linear-gradient(135deg, #f9f5d0 0%, #ede8a0 40%, #d8cc60 100%)`
-              : i === 1
-              ? `linear-gradient(135deg, #d4960a 0%, #b87008 35%, #7a4400 70%, #4a2800 100%)`
-              : i === 2
-              ? `linear-gradient(135deg, #5c2800 0%, #3a1600 40%, #200a00 100%)`
-              : `linear-gradient(135deg, #1a1008 0%, #0e0806 50%, #050302 100%)`;
-            return (
-              <button key={i} onClick={() => onColorChange(i)} title={p.label}
-                style={{
-                  width:36, height:36, borderRadius:"50%",
-                  border:`3px solid ${isSelected ? "#f1f5f9" : "#334155"}`,
-                  background: bg,
-                  cursor:"pointer", transition:"all 0.2s", flexShrink:0,
-                  boxShadow: isSelected
-                    ? `0 0 0 3px ${i===0?"#d4c520":i===1?"#b87008":i===2?"#5c2800":"#1a1008"}55, inset 0 1px 3px rgba(255,255,255,0.3)`
-                    : "inset 0 1px 2px rgba(255,255,255,0.15)",
-                  outline: i===0 ? "1px dashed #94a3b8" : "none",
-                }}/>
-            );
-          })}
+      {/* ── Oil Color selector ── */}
+      <div style={{ width:"100%", maxWidth:280 }}>
+        <div style={{ fontSize:10, color:"#64748b", marginBottom:7, textTransform:"uppercase", letterSpacing:"0.06em" }}>Oil Color / Condition</div>
+        <div style={{ display:"flex", gap:9, alignItems:"center" }}>
+          {colors.map((c, i) => (
+            <button key={i} onClick={() => onColorChange(i)} title={colorLabels[i]}
+              style={{
+                width:30, height:30, borderRadius:"50%",
+                border:`3px solid ${colorIdx===i ? "#f1f5f9" : "#334155"}`,
+                background:c, cursor:"pointer", transition:"all 0.2s", flexShrink:0,
+                boxShadow:colorIdx===i ? `0 0 0 3px ${c}66` : "none",
+                outline: i===0 ? "1px dashed #94a3b8" : "none",
+              }}/>
+          ))}
         </div>
-        <div style={{
-          fontSize:11, color:"#94a3b8", marginTop:7, fontWeight:600,
-          padding:"5px 10px", background:"#0f172a", borderRadius:6, display:"inline-block"
-        }}>
-          {OIL_PAINT[colorIdx]?.label}
-        </div>
+        <div style={{ fontSize:11, color:"#94a3b8", marginTop:6, fontWeight:600 }}>{colorLabels[colorIdx]}</div>
       </div>
     </div>
   );
