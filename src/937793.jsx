@@ -1361,7 +1361,9 @@ ${(() => {
   const drainSrc  = baPhotos["oilDrain_during"];
   const pourSrc   = baPhotos["oilPour_during"];
   const bottleSrc = baPhotos["oilBottle_photo"];
-  const any = drainSrc||pourSrc||bottleSrc;
+  const mileSrc   = baPhotos["mileageSticker_photo"];
+  const windSrc   = baPhotos["windshieldSticker_photo"];
+  const any = drainSrc||pourSrc||bottleSrc||mileSrc||windSrc;
   if (!any) return "";
   const cell = (label, src) => src
     ? `<div class="photo-cell"><img src="${src}"/><div class="photo-label">${label}</div></div>`
@@ -1372,6 +1374,8 @@ ${(() => {
     ${cell("Oil Draining", drainSrc)}
     ${cell("New Oil Being Poured", pourSrc)}
     ${cell("Oil Bottle / Label", bottleSrc)}
+    ${cell("Mileage Sticker", mileSrc)}
+    ${cell("Windshield Sticker", windSrc)}
   </div>
 </div>`;
 })()}
@@ -1607,7 +1611,7 @@ export default function App() {
             { l:"Filter & Plug",    d:!!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after) },
             { l:"Air Filters",      d:!!(baPhotos.airFilter_before&&baPhotos.airFilter_after&&baPhotos.cabinFilter_before&&baPhotos.cabinFilter_after) },
             { l:"Engine Bay",       d:!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilDrain_during&&baPhotos.oilPour_during&&baPhotos.oilCap_before&&baPhotos.oilCap_after) },
-            { l:"Labels & Stickers",d:!!baPhotos.oilBottle_photo },
+            { l:"Labels & Stickers",d:!!(baPhotos.oilBottle_photo&&baPhotos.mileageSticker_photo&&baPhotos.windshieldSticker_photo) },
           ].map((s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <div style={{ width:20, height:20, borderRadius:"50%", background:s.d?"#166534":"#334155", border:`2px solid ${s.d?"#22c55e":"#475569"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:s.d?"#bbf7d0":"#64748b", flexShrink:0, fontWeight:800 }}>{s.d?"✓":i+1}</div>
@@ -1862,17 +1866,27 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── STEP 9: Oil Bottle Label ── */}
+        {/* ── STEP 9: Labels & Stickers ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
-          baPhotos.oilBottle_photo?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={9} title="Oil Product Proof"
-            complete={!!baPhotos.oilBottle_photo}/>
+          baPhotos.oilBottle_photo&&baPhotos.mileageSticker_photo&&baPhotos.windshieldSticker_photo
+          ?"#22c55e":"#334155"}` }}>
+          <SectionHeader step={9} title="Labels & Service Stickers"
+            complete={!!(baPhotos.oilBottle_photo&&baPhotos.mileageSticker_photo&&baPhotos.windshieldSticker_photo)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Capture the oil bottle label — brand, viscosity, and API rating must be visible.
+            Capture proof of the oil product used and the service reminder stickers placed on the vehicle.
           </p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12 }}>
-            <PhotoTile label="Oil Bottle / Label" icon="🧴" desc="Brand, viscosity, API rating visible"
-              photo={baPhotos.oilBottle_photo} onCapture={v=>setBA("oilBottle_photo",v)} required={false}/>
+            {[
+              { key:"oilBottle_photo",        label:"Oil Bottle / Label",     icon:"🧴", desc:"Brand, viscosity, API rating visible" },
+              { key:"mileageSticker_photo",    label:"Mileage Sticker",        icon:"📋", desc:"Next service reminder sticker filled out" },
+              { key:"windshieldSticker_photo", label:"Windshield Sticker",     icon:"🪟", desc:"Reminder sticker placed on windshield" },
+            ].map(({ key, label, icon, desc }) => {
+              const photo = baPhotos[key];
+              return (
+                <PhotoTile key={key} label={label} icon={icon} desc={desc}
+                  photo={photo} onCapture={v => setBA(key, v)} required={false} compact={false}/>
+              );
+            })}
           </div>
         </div>
 
