@@ -1358,7 +1358,8 @@ ${baSection("🚗 Engine Bay &amp; Oil Cap — Before &amp; After", [
   ["Oil Cap",             "oilCap_before",    "oilCap_after"],
 ])}
 ${baSection("💧 Engine Oil Leak — Before &amp; After", [
-  ["Oil Leak Area", "oilLeak_before", "oilLeak_after"],
+  ["Oil Leak Area",        "oilLeak_before",       "oilLeak_after"],
+  ["Ground / Floor Stain", "oilLeakGround_before", "oilLeakGround_after"],
 ])}
 
 <!-- SIGNATURE BLOCK -->
@@ -1835,6 +1836,11 @@ export default function App() {
               desc="Leak location — undercarriage, gasket, seal, oil pan, drain plug"
               before={baPhotos.oilLeak_before} after={baPhotos.oilLeak_after}
               onBefore={v=>setBA("oilLeak_before",v)} onAfter={v=>setBA("oilLeak_after",v)}/>
+            <BeforeAfterPair
+              label="Ground / Floor Stain" icon="🟤"
+              desc="Oil drip stain on ground beneath the vehicle"
+              before={baPhotos.oilLeakGround_before} after={baPhotos.oilLeakGround_after}
+              onBefore={v=>setBA("oilLeakGround_before",v)} onAfter={v=>setBA("oilLeakGround_after",v)}/>
           </div>
         </div>
 
