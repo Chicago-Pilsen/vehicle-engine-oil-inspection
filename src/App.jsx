@@ -25,10 +25,293 @@ const KNOWN_MAKES = [
 ];
 
 const FLUIDS = [
-  { id:"engineOil", label:"Engine Oil", icon:"🛢️", type:"dipstick", colors:["#fefde8","#f5d060","#b45309","#100500"], colorLabels:["New / Clear Yellow","Amber (good)","Dark Brown","Black/Sludge — change now"], intervals:[5000], critical:true, notes:"Check viscosity, level, color. Milky appearance = coolant contamination. Very light yellow = freshly changed. Darkening to black = needs change." },
+  {
+    id:"engineOil", label:"Engine Oil", icon:"🛢️", type:"dipstick",
+    // Base colors for swatches — but actual rendering uses OIL_PAINT below
+    colors:["#f5f0c8","#d4960a","#7a3a08","#0e0704"],
+    colorLabels:["New / Clear Light Yellow","Amber / Honey (good)","Dark Brown (aging)","Black / Sludge — change now"],
+    intervals:[5000], critical:true,
+    notes:"Check viscosity, level, color. Milky appearance = coolant contamination. Very light yellow = freshly changed. Darkening to black = needs change."
+  },
 ];
 
-// ─── Validation ───────────────────────────────────────────────────────────────
+// ── Photorealistic oil paint definitions per condition ─────────────────────────
+// Each entry has: multiple gradient stops, specular color, opacity, rim color
+const OIL_PAINT = [
+  // 0 — New / Clear Light Yellow — thin, almost transparent, pale straw
+  {
+    stops:[
+      {o:"0%",   c:"#f9f3c4", a:0.28},
+      {o:"18%",  c:"#f0e68c", a:0.38},
+      {o:"45%",  c:"#e8d84a", a:0.32},
+      {o:"72%",  c:"#d4c520", a:0.42},
+      {o:"100%", c:"#c8b800", a:0.48},
+    ],
+    specular:"#fffff0",
+    specularOpacity: 0.55,
+    rimLight:"#f5f0a0",
+    meniscusColor:"#f0e870",
+    meniscusOpacity: 0.50,
+    dripOpacity: 0.35,
+    shineOpacity: 0.45,
+    label:"New / Clear Light Yellow",
+  },
+  // 1 — Amber / Honey — warm golden-brown, semi-transparent, rich color
+  {
+    stops:[
+      {o:"0%",   c:"#c87d00", a:0.72},
+      {o:"20%",  c:"#d4860a", a:0.82},
+      {o:"40%",  c:"#b86800", a:0.88},
+      {o:"60%",  c:"#9a5200", a:0.92},
+      {o:"85%",  c:"#7a3e00", a:0.95},
+      {o:"100%", c:"#5c2e00", a:0.98},
+    ],
+    specular:"#ffd966",
+    specularOpacity: 0.50,
+    rimLight:"#e8a020",
+    meniscusColor:"#c8780a",
+    meniscusOpacity: 0.80,
+    dripOpacity: 0.75,
+    shineOpacity: 0.30,
+    label:"Amber / Honey (good)",
+  },
+  // 2 — Dark Brown — opaque, very dark, slight reddish undertone
+  {
+    stops:[
+      {o:"0%",   c:"#5c2800", a:0.90},
+      {o:"25%",  c:"#4a1e00", a:0.94},
+      {o:"55%",  c:"#361400", a:0.97},
+      {o:"80%",  c:"#280e00", a:0.98},
+      {o:"100%", c:"#1a0800", a:1.00},
+    ],
+    specular:"#c86030",
+    specularOpacity: 0.22,
+    rimLight:"#8b3a10",
+    meniscusColor:"#5c2800",
+    meniscusOpacity: 0.92,
+    dripOpacity: 0.88,
+    shineOpacity: 0.14,
+    label:"Dark Brown (aging)",
+  },
+  // 3 — Black / Sludge — fully opaque matte black, zero transparency
+  {
+    stops:[
+      {o:"0%",   c:"#1a1008", a:0.97},
+      {o:"30%",  c:"#120a04", a:0.99},
+      {o:"70%",  c:"#0a0600", a:1.00},
+      {o:"100%", c:"#050300", a:1.00},
+    ],
+    specular:"#4a3020",
+    specularOpacity: 0.12,
+    rimLight:"#2a1808",
+    meniscusColor:"#1a1008",
+    meniscusOpacity: 0.98,
+    dripOpacity: 0.96,
+    shineOpacity: 0.06,
+    label:"Black / Sludge — change now",
+  },
+];
+
+// ── Vehicle Oil Specs Database ─────────────────────────────────────────────────
+// Maps make+model patterns to oil type, capacity, filter, and tools
+const OIL_SPECS_DB = {
+  // Toyota
+  "toyota_camry":       { oil:"5W-30 Full Synthetic", capacity:"4.8 qt", filter:"Toyota 90915-YZZD4", drain:"14mm", tools:["14mm drain plug socket","Oil filter wrench","Drain pan (5+ qt)","Funnel","Torque wrench","Jack stands or ramps"] },
+  "toyota_corolla":     { oil:"0W-20 Full Synthetic", capacity:"4.4 qt", filter:"Toyota 90915-YZZD4", drain:"14mm", tools:["14mm drain plug socket","Oil filter wrench","Drain pan","Funnel","Jack stands"] },
+  "toyota_rav4":        { oil:"0W-20 Full Synthetic", capacity:"4.8 qt", filter:"Toyota 90915-YZZD4", drain:"14mm", tools:["14mm drain plug socket","Oil filter wrench","Drain pan (5+ qt)","Funnel","Jack stands"] },
+  "toyota_tacoma":      { oil:"0W-20 Full Synthetic", capacity:"6.2 qt", filter:"Toyota 90915-YZZD4", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Torque wrench"] },
+  "toyota_tundra":      { oil:"0W-20 Full Synthetic", capacity:"8.7 qt", filter:"Toyota 90915-YZZD4", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan (10+ qt)","Funnel","Torque wrench","Jack stands"] },
+  "toyota_highlander":  { oil:"0W-20 Full Synthetic", capacity:"6.4 qt", filter:"Toyota 90915-YZZF1", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel"] },
+  "toyota_4runner":     { oil:"5W-30 Full Synthetic", capacity:"5.5 qt", filter:"Toyota 90915-YZZD4", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Torque wrench"] },
+  // Honda
+  "honda_civic":        { oil:"0W-20 Full Synthetic", capacity:"3.7 qt", filter:"Honda 15400-PLM-A02", drain:"17mm", tools:["17mm drain plug socket","Honda oil filter wrench","Drain pan","Funnel","Jack stands"] },
+  "honda_accord":       { oil:"0W-20 Full Synthetic", capacity:"3.7 qt", filter:"Honda 15400-PLM-A02", drain:"17mm", tools:["17mm socket","Oil filter wrench","Drain pan (4+ qt)","Funnel","Jack stands"] },
+  "honda_cr-v":         { oil:"0W-20 Full Synthetic", capacity:"3.7 qt", filter:"Honda 15400-PLM-A02", drain:"17mm", tools:["17mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  "honda_pilot":        { oil:"5W-20 Full Synthetic", capacity:"4.5 qt", filter:"Honda 15400-PLM-A02", drain:"17mm", tools:["17mm socket","Oil filter wrench","Drain pan (5+ qt)","Funnel","Jack stands"] },
+  "honda_odyssey":      { oil:"5W-20 Full Synthetic", capacity:"4.5 qt", filter:"Honda 15400-PLM-A02", drain:"17mm", tools:["17mm socket","Oil filter wrench","Drain pan (5+ qt)","Funnel"] },
+  // Ford
+  "ford_f-150":         { oil:"5W-30 Full Synthetic", capacity:"6.0 qt", filter:"Motorcraft FL-500S", drain:"16mm", tools:["16mm drain plug socket","Oil filter cap wrench","Drain pan (7+ qt)","Funnel","Torque wrench","Ramps or jack stands"] },
+  "ford_mustang":       { oil:"5W-50 Full Synthetic", capacity:"8.0 qt", filter:"Motorcraft FL-500S", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Jack stands"] },
+  "ford_explorer":      { oil:"5W-30 Full Synthetic", capacity:"6.0 qt", filter:"Motorcraft FL-910S", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Jack stands"] },
+  "ford_escape":        { oil:"5W-20 Full Synthetic", capacity:"4.5 qt", filter:"Motorcraft FL-400S", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  "ford_ranger":        { oil:"5W-30 Full Synthetic", capacity:"5.0 qt", filter:"Motorcraft FL-500S", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Ramps"] },
+  // Chevrolet
+  "chevrolet_silverado":{ oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm drain plug socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
+  "chevrolet_equinox":  { oil:"5W-30 Full Synthetic", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
+  "chevrolet_malibu":   { oil:"5W-30 Full Synthetic", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  "chevrolet_tahoe":    { oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
+  "chevrolet_camaro":   { oil:"5W-30 Full Synthetic", capacity:"6.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Jack stands"] },
+  // GMC
+  "gmc_sierra":         { oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
+  "gmc_yukon":          { oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Ramps or jack stands"] },
+  // Nissan
+  "nissan_altima":      { oil:"5W-30 Full Synthetic", capacity:"4.9 qt", filter:"Nissan 15208-9E01A", drain:"14mm", tools:["14mm drain plug socket","Oil filter wrench","Drain pan (5+ qt)","Funnel","Jack stands"] },
+  "nissan_rogue":       { oil:"0W-20 Full Synthetic", capacity:"4.4 qt", filter:"Nissan 15208-9E01A", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  "nissan_frontier":    { oil:"5W-30 Full Synthetic", capacity:"5.1 qt", filter:"Nissan 15208-9E01A", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Ramps"] },
+  "nissan_titan":       { oil:"5W-30 Full Synthetic", capacity:"6.9 qt", filter:"Nissan 15208-65F0E", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan (8+ qt)","Funnel","Torque wrench"] },
+  // Jeep
+  "jeep_wrangler":      { oil:"5W-20 Full Synthetic", capacity:"6.0 qt", filter:"Mopar 68191349AA", drain:"18mm", tools:["18mm drain plug socket","Oil filter cap wrench","Drain pan (7+ qt)","Funnel","Torque wrench","Jack stands"] },
+  "jeep_grand cherokee":{ oil:"5W-20 Full Synthetic", capacity:"6.0 qt", filter:"Mopar 68191349AA", drain:"18mm", tools:["18mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Jack stands"] },
+  "jeep_cherokee":      { oil:"5W-20 Full Synthetic", capacity:"5.5 qt", filter:"Mopar 68191349AA", drain:"18mm", tools:["18mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel"] },
+  // BMW
+  "bmw_3 series":       { oil:"5W-30 Full Synthetic (BMW LL-01)", capacity:"5.8 qt", filter:"Mann HU 816 x", drain:"17mm", tools:["17mm drain plug socket","BMW oil filter cap wrench 36mm","Drain pan (7+ qt)","Funnel","Torque wrench","Jack stands","BMW-spec oil only"] },
+  "bmw_5 series":       { oil:"5W-30 Full Synthetic (BMW LL-01)", capacity:"6.9 qt", filter:"Mann HU 816 x", drain:"17mm", tools:["17mm socket","BMW oil filter cap wrench","Drain pan (8+ qt)","Funnel","Torque wrench"] },
+  "bmw_x5":             { oil:"5W-30 Full Synthetic (BMW LL-01)", capacity:"6.9 qt", filter:"Mann HU 816 x", drain:"17mm", tools:["17mm socket","BMW filter cap wrench","Drain pan (8+ qt)","Funnel","Ramps","Torque wrench"] },
+  // Mercedes
+  "mercedes_c-class":   { oil:"5W-30 Full Synthetic (MB 229.5)", capacity:"6.9 qt", filter:"Mann W 67/1", drain:"13mm", tools:["13mm drain plug socket","Oil filter socket","Drain pan (8+ qt)","Funnel","Torque wrench","MB-approved oil required"] },
+  "mercedes_e-class":   { oil:"5W-30 Full Synthetic (MB 229.5)", capacity:"7.4 qt", filter:"Mann W 67/1", drain:"13mm", tools:["13mm socket","Oil filter socket","Drain pan (9+ qt)","Funnel","Torque wrench"] },
+  // Subaru
+  "subaru_outback":     { oil:"0W-20 Full Synthetic", capacity:"5.1 qt", filter:"Subaru 15208AA15A", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands","Drain plug gasket (replace each time)"] },
+  "subaru_forester":    { oil:"0W-20 Full Synthetic", capacity:"4.7 qt", filter:"Subaru 15208AA15A", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel","Jack stands"] },
+  "subaru_impreza":     { oil:"0W-20 Full Synthetic", capacity:"4.2 qt", filter:"Subaru 15208AA15A", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  // Dodge / Ram
+  "ram_1500":           { oil:"5W-20 Full Synthetic", capacity:"7.0 qt", filter:"Mopar 68191349AA", drain:"15mm", tools:["15mm drain plug socket","Oil filter cap wrench","Drain pan (8+ qt)","Funnel","Torque wrench","Ramps"] },
+  "dodge_charger":      { oil:"5W-20 Full Synthetic", capacity:"5.9 qt", filter:"Mopar 68191349AA", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Jack stands"] },
+  "dodge_challenger":   { oil:"5W-20 Full Synthetic", capacity:"5.9 qt", filter:"Mopar 68191349AA", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Jack stands"] },
+  // Hyundai / Kia
+  "hyundai_elantra":    { oil:"5W-20 Full Synthetic", capacity:"4.2 qt", filter:"Hyundai 26300-35504", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel","Jack stands"] },
+  "hyundai_tucson":     { oil:"5W-20 Full Synthetic", capacity:"4.8 qt", filter:"Hyundai 26300-35504", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  "kia_soul":           { oil:"5W-20 Full Synthetic", capacity:"3.6 qt", filter:"Kia 26300-35504", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  "kia_sportage":       { oil:"5W-20 Full Synthetic", capacity:"4.8 qt", filter:"Kia 26300-35504", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel","Jack stands"] },
+};
+
+// Look up specs by make + model (fuzzy match)
+function getOilSpecs(make, model) {
+  if (!make || !model) return null;
+  const key = `${make.toLowerCase()}_${model.toLowerCase()}`;
+  // Exact match
+  if (OIL_SPECS_DB[key]) return OIL_SPECS_DB[key];
+  // Partial match — check if key starts with any db key or vice versa
+  const found = Object.entries(OIL_SPECS_DB).find(([k]) => {
+    return key.startsWith(k) || k.startsWith(key) ||
+      key.includes(k.split("_")[1]) && key.startsWith(k.split("_")[0]);
+  });
+  return found ? found[1] : null;
+}
+
+// Common tools needed for ANY oil change
+const UNIVERSAL_TOOLS = [
+  "Safety glasses","Nitrile gloves","Shop rags / paper towels",
+  "New drain plug washer/gasket","Oil catch pan (labeled for recycling)",
+  "Plastic sheeting or cardboard (floor protection)",
+];
+
+// ── VehicleSpecs card shown after VIN decode ──────────────────────────────────
+function VehicleSpecsCard({ vinData, make, model }) {
+  const specs = getOilSpecs(make, model);
+  if (!vinData || vinData.error) return null;
+
+  const cylinders  = vinData.EngineCylinders && vinData.EngineCylinders !== "0" ? vinData.EngineCylinders : null;
+  const displacement = vinData.DisplacementL && vinData.DisplacementL !== "0" ? parseFloat(vinData.DisplacementL).toFixed(1) : null;
+  const engineModel  = vinData.EngineModel || null;
+  const fuelType     = vinData.FuelTypePrimary || null;
+  const driveType    = vinData.DriveType || null;
+  const bodyClass    = vinData.BodyClass || null;
+  const plant        = vinData.PlantCity && vinData.PlantCountry ? `${vinData.PlantCity}, ${vinData.PlantCountry}` : null;
+
+  const allTools = specs
+    ? [...UNIVERSAL_TOOLS, ...specs.tools]
+    : UNIVERSAL_TOOLS;
+
+  return (
+    <div style={{ background:"linear-gradient(135deg,#0a1628,#0f2040)", border:"1.5px solid #1d4ed8", borderRadius:16, padding:20, marginTop:14 }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+        <span style={{ fontSize:20 }}>🔎</span>
+        <div>
+          <div style={{ fontWeight:800, fontSize:14, color:"#bfdbfe" }}>VIN Decoded — Vehicle Specs</div>
+          <div style={{ fontSize:10, color:"#3b82f6" }}>{vinData.ModelYear} {vinData.Make} {vinData.Model}</div>
+        </div>
+      </div>
+
+      {/* Engine info grid */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:"8px 16px", marginBottom:16 }}>
+        {cylinders && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Engine</div>
+            <div style={{ fontSize:15, fontWeight:800, color:"#dbeafe" }}>{cylinders}-Cylinder</div>
+            {displacement && <div style={{ fontSize:10, color:"#93c5fd" }}>{displacement}L displacement</div>}
+          </div>
+        )}
+        {fuelType && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Fuel Type</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#dbeafe" }}>{fuelType}</div>
+          </div>
+        )}
+        {driveType && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Drive</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#dbeafe" }}>{driveType}</div>
+          </div>
+        )}
+        {bodyClass && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Body</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#dbeafe" }}>{bodyClass}</div>
+          </div>
+        )}
+        {plant && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Assembled</div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#dbeafe" }}>{plant}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Oil Specs */}
+      {specs ? (
+        <div style={{ background:"#0a2040", borderRadius:10, padding:"12px 14px", marginBottom:14, border:"1px solid #1d4ed8" }}>
+          <div style={{ fontSize:10, fontWeight:700, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>
+            🛢️ Recommended Oil Specs for this Vehicle
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px 16px" }}>
+            <div>
+              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Oil Type</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fef08a" }}>{specs.oil}</div>
+            </div>
+            <div>
+              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Capacity</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#bbf7d0" }}>{specs.capacity}</div>
+            </div>
+            <div>
+              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Drain Plug</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#e0f2fe" }}>{specs.drain} socket</div>
+            </div>
+            <div style={{ gridColumn:"1/-1" }}>
+              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Oil Filter</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#fecdd3" }}>🔩 {specs.filter}</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ background:"#0a2040", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:11, color:"#64748b" }}>
+          🛢️ Oil specs not in database for this model — check owner's manual or OEM specification sheet
+        </div>
+      )}
+
+      {/* Tools Needed */}
+      <div>
+        <div style={{ fontSize:10, fontWeight:700, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
+          🔧 Tools Needed for Oil Change
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:5 }}>
+          {allTools.map((tool, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:6, background:"#0f172a", borderRadius:6, padding:"5px 9px" }}>
+              <span style={{ fontSize:10, color:"#3b82f6", flexShrink:0 }}>
+                {i < UNIVERSAL_TOOLS.length ? "🧰" : "🔩"}
+              </span>
+              <span style={{ fontSize:11, color:"#94a3b8" }}>{tool}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize:9, color:"#475569", marginTop:8, lineHeight:1.5 }}>
+          🧰 = universal supplies needed for any oil change &nbsp;·&nbsp; 🔩 = vehicle-specific tools
+        </div>
+      </div>
+    </div>
+  );
+}
 const isValidName    = v => v.trim().length >= 2 && /^[a-zA-Z\s'\-]+$/.test(v.trim());
 const isValidPhone   = v => /^[\d\s\-\(\)\+]{7,15}$/.test(v.trim());
 const isValidEmail   = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -185,205 +468,308 @@ function PhotoTile({ label, icon, desc, photo, onCapture, required=true, compact
   );
 }
 
-// ─── VERTICAL Dipstick — points downward like a real engine dipstick ──────────
-// Handle ring at TOP. Stick goes DOWN. Tip (pointed) at BOTTOM.
-// Crosshatch diamond pattern ONLY in the center zone between L (low, lower) and F (full, upper).
-// Oil fill rises from the BOTTOM (tip) upward — more oil = higher level.
-// L mark is BELOW F mark (low = closer to tip = lower on stick).
+// ─── REALISTIC Dipstick Gauge ─────────────────────────────────────────────────
 function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelChange, onColorChange }) {
   const fillColor = colors[colorIdx] || colors[0];
 
-  // SVG geometry — vertical stick
-  const SVG_W = 200, SVG_H = 340;
-  const stickX = 72;   // center X of stick
-  const stickW = 32;   // width of stick body
-  const stickTop = 52; // y where stick body starts (below handle)
-  const stickBot = 290;// y where stick body ends (before pointed tip)
+  // Canvas dimensions
+  const SVG_W = 220, SVG_H = 400;
+  const cx = 80; // center X of stick
+
+  // Stick geometry — thin, tapered like a real dipstick
+  const stickW = 14;       // narrow metal rod
+  const stickTop = 68;     // below handle/neck
+  const stickBot = 310;    // before tip
   const stickH = stickBot - stickTop;
 
-  // The measurement zone (crosshatch area) — center portion of stick
-  // F (full) mark is HIGHER on the stick (lower Y value)
-  // L (low)  mark is LOWER  on the stick (higher Y value)
-  const fMarkY = stickTop + Math.round(stickH * 0.28); // F = upper mark (~28% from top)
-  const lMarkY = stickTop + Math.round(stickH * 0.62); // L = lower mark (~62% from top)
+  // Measurement zone — between F (full/upper) and L (low/lower)
+  const fMarkY = stickTop + Math.round(stickH * 0.30);
+  const lMarkY = stickTop + Math.round(stickH * 0.60);
   const hatchTop = fMarkY;
   const hatchBot = lMarkY;
-  const hatchH   = hatchBot - hatchTop;
+  const hatchH = hatchBot - hatchTop;
 
-  // Oil level: 0% = tip of stick (stickBot), 100% = top of stick (stickTop)
-  // Fill rises from bottom. The fill Y start = stickBot - (level/100)*stickH
+  // Oil fill — rises from bottom tip upward
   const fillTopY = stickBot - Math.round((level / 100) * stickH);
 
-  const uid = "EngineOil";
+  // Status
+  const statusLabel = level < 30 ? "ADD OIL" : level < 44 ? "LOW" : level <= 72 ? "O.K." : "TOO FULL";
+  const statusColor = level < 30 ? "#ef4444" : level < 44 ? "#f97316" : level <= 72 ? "#22c55e" : "#eab308";
 
-  // Status based on where level lands relative to L and F marks
-  const statusLabel = level < 28  ? "ADD OIL"  :
-                      level < 42  ? "LOW"       :
-                      level <= 72 ? "O.K."      : "TOO FULL";
-  const statusColor = level < 28  ? "#ef4444"   :
-                      level < 42  ? "#f97316"   :
-                      level <= 72 ? "#22c55e"   : "#eab308";
+  // Sheen highlight x positions on stick
+  const shineX = cx - stickW/2 + 2;
 
-  // Arrow indicator Y (current oil surface)
-  const arrowY = fillTopY;
+  // Photorealistic oil paint for this condition
+  const paint = OIL_PAINT[colorIdx] || OIL_PAINT[1];
+  const gradId = `oilReal-${colorIdx}`;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, width:"100%" }}>
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:8, width:"100%" }}>
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"center", gap:6, width:"100%" }}>
 
-        {/* ── DIPSTICK SVG ── */}
+        {/* ── REALISTIC DIPSTICK SVG ── */}
         <svg width={SVG_W} height={SVG_H} style={{ overflow:"visible", flexShrink:0 }}>
           <defs>
-            {/* Clip to stick body rectangle */}
-            <clipPath id="ds-stick-body">
-              <rect x={stickX - stickW/2} y={stickTop} width={stickW} height={stickH + 20}/>
+            {/* Metal gradient for stick body — gives 3D round rod look */}
+            <linearGradient id="metalGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%"   stopColor="#2d3748"/>
+              <stop offset="15%"  stopColor="#718096"/>
+              <stop offset="35%"  stopColor="#e2e8f0"/>
+              <stop offset="50%"  stopColor="#f7fafc"/>
+              <stop offset="65%"  stopColor="#cbd5e0"/>
+              <stop offset="85%"  stopColor="#4a5568"/>
+              <stop offset="100%" stopColor="#1a202c"/>
+            </linearGradient>
+            {/* Handle gradient — yellow/orange loop like real dipsticks */}
+            <linearGradient id="handleGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%"   stopColor="#92400e"/>
+              <stop offset="20%"  stopColor="#f59e0b"/>
+              <stop offset="50%"  stopColor="#fef08a"/>
+              <stop offset="80%"  stopColor="#f59e0b"/>
+              <stop offset="100%" stopColor="#78350f"/>
+            </linearGradient>
+            {/* Neck gradient */}
+            <linearGradient id="neckGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%"   stopColor="#1a202c"/>
+              <stop offset="40%"  stopColor="#718096"/>
+              <stop offset="60%"  stopColor="#a0aec0"/>
+              <stop offset="100%" stopColor="#2d3748"/>
+            </linearGradient>
+            {/* Hatch zone overlay — etched/darker area */}
+            <linearGradient id="hatchBg" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%"   stopColor="#000" stopOpacity="0.5"/>
+              <stop offset="30%"  stopColor="#000" stopOpacity="0.15"/>
+              <stop offset="70%"  stopColor="#000" stopOpacity="0.15"/>
+              <stop offset="100%" stopColor="#000" stopOpacity="0.5"/>
+            </linearGradient>
+
+            {/* ── PHOTOREALISTIC OIL GRADIENT (vertical, top=lighter, bottom=darker) ── */}
+            <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+              {paint.stops.map((s,i) => (
+                <stop key={i} offset={s.o} stopColor={s.c} stopOpacity={s.a}/>
+              ))}
+            </linearGradient>
+
+            {/* Specular highlight gradient — left-side bright streak */}
+            <linearGradient id={`oilSpec-${colorIdx}`} x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%"   stopColor={paint.specular} stopOpacity={paint.specularOpacity}/>
+              <stop offset="40%"  stopColor={paint.specular} stopOpacity={paint.specularOpacity * 0.6}/>
+              <stop offset="100%" stopColor={paint.specular} stopOpacity="0"/>
+            </linearGradient>
+
+            {/* Rim light gradient — right edge warm glow */}
+            <linearGradient id={`oilRim-${colorIdx}`} x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%"   stopColor={paint.rimLight} stopOpacity="0"/>
+              <stop offset="70%"  stopColor={paint.rimLight} stopOpacity="0.15"/>
+              <stop offset="100%" stopColor={paint.rimLight} stopOpacity="0.35"/>
+            </linearGradient>
+
+            {/* Clip to stick body */}
+            <clipPath id="stickClip">
+              <rect x={cx-stickW/2} y={stickTop} width={stickW} height={stickH+30} rx={2}/>
             </clipPath>
             {/* Clip to hatch zone only */}
-            <clipPath id="ds-hatch-zone">
-              <rect x={stickX - stickW/2} y={hatchTop} width={stickW} height={hatchH}/>
+            <clipPath id="hatchClip">
+              <rect x={cx-stickW/2} y={hatchTop} width={stickW} height={hatchH}/>
+            </clipPath>
+            {/* Clip to tip triangle */}
+            <clipPath id="tipClip">
+              <polygon points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}/>
+            </clipPath>
+            {/* Clip to oil fill area only */}
+            <clipPath id={`oilClip-${colorIdx}`}>
+              <rect x={cx-stickW/2} y={fillTopY} width={stickW} height={stickBot-fillTopY+28}/>
             </clipPath>
           </defs>
 
-          {/* ── HANDLE RING at top ── */}
-          {/* Outer ring */}
-          <ellipse cx={stickX} cy={22} rx={18} ry={13} fill="#64748b" stroke="#94a3b8" strokeWidth={1.5}/>
-          {/* Inner hole */}
-          <ellipse cx={stickX} cy={22} rx={10} ry={7} fill="#0f172a"/>
-          {/* Neck connecting ring to stick */}
-          <rect x={stickX - 5} y={30} width={10} height={stickTop - 28} rx={3} fill="#5a6a7a"/>
+          {/* ══ HANDLE — yellow pull-loop like real engine dipstick ══ */}
+          <ellipse cx={cx} cy={26} rx={22} ry={16} fill="#78350f" opacity={0.5}/>
+          <ellipse cx={cx} cy={24} rx={21} ry={15} fill="url(#handleGrad)" stroke="#92400e" strokeWidth={1.5}/>
+          <ellipse cx={cx} cy={24} rx={13} ry={8} fill="#0f172a"/>
+          <ellipse cx={cx-4} cy={20} rx={5} ry={3} fill="#fef9c3" opacity={0.5}/>
+          <text x={cx} y={27} textAnchor="middle" fill="#92400e" fontSize={6} fontWeight="800" letterSpacing="0.05em">OIL</text>
 
-          {/* ── STICK BODY (metal rod) ── */}
-          <rect x={stickX - stickW/2} y={stickTop} width={stickW} height={stickH}
-            fill="#1a2535" stroke="#475569" strokeWidth={1.5} rx={3}/>
+          {/* ══ NECK ══ */}
+          <path d={`M ${cx-8} 36 L ${cx-stickW/2} ${stickTop} L ${cx+stickW/2} ${stickTop} L ${cx+8} 36 Z`}
+            fill="url(#neckGrad)" stroke="#4a5568" strokeWidth={0.8}/>
+          <path d={`M ${cx-2} 36 L ${cx-stickW/2+1} ${stickTop}`}
+            stroke="#a0aec0" strokeWidth={1} opacity={0.6}/>
 
-          {/* ── POINTED TIP at bottom ── */}
+          {/* ══ STICK BODY — metal rod ══ */}
+          <rect x={cx-stickW/2} y={stickTop} width={stickW} height={stickH}
+            fill="url(#metalGrad)" rx={2}/>
+
+          {/* ══ PHOTOREALISTIC OIL FILL ══ */}
+          {/* Layer 1: Base oil body */}
+          <rect x={cx-stickW/2+1} y={fillTopY}
+            width={stickW-2} height={Math.max(0, stickBot-fillTopY)}
+            fill={`url(#${gradId})`}
+            clipPath="url(#stickClip)"
+            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
+
+          {/* Layer 2: Specular highlight — left side bright streak (oil is glossy) */}
+          <rect x={cx-stickW/2+1} y={fillTopY}
+            width={stickW-2} height={Math.max(0, stickBot-fillTopY)}
+            fill={`url(#oilSpec-${colorIdx})`}
+            clipPath="url(#stickClip)"
+            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
+
+          {/* Layer 3: Rim light — right edge subtle warm bounce */}
+          <rect x={cx-stickW/2+1} y={fillTopY}
+            width={stickW-2} height={Math.max(0, stickBot-fillTopY)}
+            fill={`url(#oilRim-${colorIdx})`}
+            clipPath="url(#stickClip)"
+            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
+
+          {/* Layer 4: Thin bright center shine line running through oil */}
+          <rect x={cx-1} y={fillTopY+4}
+            width={2} height={Math.max(0, stickBot-fillTopY-12)}
+            fill={paint.specular} opacity={paint.shineOpacity * 0.4}
+            clipPath="url(#stickClip)"
+            style={{transition:"y 0.4s ease, height 0.4s ease"}}/>
+
+          {/* ══ OIL SURFACE MENISCUS — curved lip where oil meets air ══ */}
+          {/* Outer meniscus — darker curved shadow */}
+          <ellipse cx={cx} cy={fillTopY} rx={stickW/2-0.5} ry={4}
+            fill={paint.meniscusColor} opacity={paint.meniscusOpacity * 0.6}
+            style={{transition:"cy 0.4s ease"}}/>
+          {/* Inner meniscus — bright highlight on curved surface */}
+          <ellipse cx={cx} cy={fillTopY-1} rx={stickW/2-2} ry={2.5}
+            fill={paint.specular} opacity={paint.specularOpacity * 0.8}
+            style={{transition:"cy 0.4s ease"}}/>
+          {/* Tiny bright center spot on meniscus */}
+          <ellipse cx={cx-1} cy={fillTopY-1} rx={2} ry={1}
+            fill="#ffffff" opacity={paint.shineOpacity * 0.6}
+            style={{transition:"cy 0.4s ease"}}/>
+
+          {/* ══ OIL ON TIP ══ */}
           <polygon
-            points={`${stickX-stickW/2},${stickBot} ${stickX+stickW/2},${stickBot} ${stickX},${stickBot+22}`}
-            fill="#1a2535" stroke="#475569" strokeWidth={1.5}/>
-
-          {/* ── OIL FILL — rises from tip upward ── */}
-          <rect
-            x={stickX - stickW/2 + 1}
-            y={fillTopY}
-            width={stickW - 2}
-            height={stickBot - fillTopY}
-            fill={fillColor}
-            opacity={colorIdx === 0 ? 0.70 : 0.92}
-            clipPath="url(#ds-stick-body)"
-            style={{ transition:"y 0.35s ease, height 0.35s ease" }}
-          />
-          {/* Oil fill continues into tip polygon — separate fill */}
+            points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}
+            fill={`url(#${gradId})`}/>
+          {/* Tip specular */}
           <polygon
-            points={`${stickX-stickW/2},${stickBot} ${stickX+stickW/2},${stickBot} ${stickX},${stickBot+22}`}
-            fill={fillColor} opacity={colorIdx === 0 ? 0.60 : 0.88}
-          />
+            points={`${cx-stickW/2},${stickBot} ${cx+stickW/2},${stickBot} ${cx},${stickBot+28}`}
+            fill={`url(#oilSpec-${colorIdx})`}/>
+          {/* Oil drip at very tip — teardrop shape */}
+          <ellipse cx={cx} cy={stickBot+30} rx={3.5} ry={5}
+            fill={paint.meniscusColor} opacity={paint.dripOpacity}/>
+          {/* Drip highlight */}
+          <ellipse cx={cx-1} cy={stickBot+28} rx={1.2} ry={1.8}
+            fill={paint.specular} opacity={paint.specularOpacity * 0.6}/>
 
-          {/* ── HATCH ZONE dark overlay (so crosshatch shows clearly) ── */}
-          <rect x={stickX - stickW/2} y={hatchTop} width={stickW} height={hatchH}
-            fill="#0a1020" opacity={0.35} clipPath="url(#ds-stick-body)"/>
-
-          {/* ── DIAMOND CROSSHATCH — ONLY in center zone between L and F ── */}
-          <g clipPath="url(#ds-hatch-zone)">
-            {Array.from({ length: 22 }).map((_, i) => {
-              const sp = 10;
-              const startY = hatchTop - stickW + i * sp;
+          {/* ══ HATCH ZONE — etched measurement area ══ */}
+          <rect x={cx-stickW/2} y={hatchTop} width={stickW} height={hatchH}
+            fill="url(#hatchBg)" clipPath="url(#stickClip)"/>
+          <g clipPath="url(#hatchClip)">
+            {Array.from({length:20}).map((_,i)=>{
+              const sp=9, sy = hatchTop - stickW + i*sp;
               return [
-                // top-left → bottom-right diagonal
-                <line key={`x1-${i}`}
-                  x1={stickX - stickW/2} y1={startY}
-                  x2={stickX + stickW/2} y2={startY + stickW}
-                  stroke="#ffffff" strokeWidth={0.9} opacity={0.38}/>,
-                // top-right → bottom-left diagonal
-                <line key={`x2-${i}`}
-                  x1={stickX + stickW/2} y1={startY}
-                  x2={stickX - stickW/2} y2={startY + stickW}
-                  stroke="#ffffff" strokeWidth={0.9} opacity={0.38}/>,
+                <line key={`ha${i}`} x1={cx-stickW/2} y1={sy} x2={cx+stickW/2} y2={sy+stickW}
+                  stroke="#fff" strokeWidth={0.7} opacity={0.45}/>,
+                <line key={`hb${i}`} x1={cx+stickW/2} y1={sy} x2={cx-stickW/2} y2={sy+stickW}
+                  stroke="#fff" strokeWidth={0.7} opacity={0.45}/>,
               ];
             })}
           </g>
+          <line x1={cx-stickW/2-1} y1={hatchTop} x2={cx+stickW/2+1} y2={hatchTop}
+            stroke="#e2e8f0" strokeWidth={1.5}/>
+          <line x1={cx-stickW/2-1} y1={hatchBot} x2={cx+stickW/2+1} y2={hatchBot}
+            stroke="#e2e8f0" strokeWidth={1.5}/>
 
-          {/* Hatch zone border lines (horizontal, left+right edges) */}
-          <line x1={stickX-stickW/2} y1={hatchTop} x2={stickX+stickW/2} y2={hatchTop} stroke="#94a3b8" strokeWidth={1.2}/>
-          <line x1={stickX-stickW/2} y1={hatchBot} x2={stickX+stickW/2} y2={hatchBot} stroke="#94a3b8" strokeWidth={1.2}/>
+          {/* ══ METAL SHEEN — polished rod highlight on top of oil ══ */}
+          <rect x={cx-stickW/2} y={stickTop} width={3} height={stickH}
+            fill="#fff" opacity={0.12} rx={1} clipPath="url(#stickClip)"/>
 
-          {/* ── F mark (FULL — upper mark) ── */}
-          <line x1={stickX - stickW/2 - 8} y1={fMarkY} x2={stickX + stickW/2 + 8} y2={fMarkY}
-            stroke="#22c55e" strokeWidth={1.8}/>
-          {/* F label — right side */}
-          <text x={stickX + stickW/2 + 14} y={fMarkY + 4} fill="#22c55e" fontSize={12} fontWeight="700">F</text>
-          <text x={stickX + stickW/2 + 28} y={fMarkY + 4} fill="#94a3b8" fontSize={8}>Full level</text>
+          {/* ══ F MARK — FULL (upper) ══ */}
+          <line x1={cx-stickW/2-10} y1={fMarkY} x2={cx+stickW/2+10} y2={fMarkY}
+            stroke="#22c55e" strokeWidth={2}/>
+          {/* Notch cut into stick at F */}
+          <rect x={cx-stickW/2-2} y={fMarkY-1} width={stickW+4} height={2} fill="#22c55e" opacity={0.8}/>
+          <text x={cx+stickW/2+16} y={fMarkY+4} fill="#22c55e" fontSize={13} fontWeight="900">F</text>
+          <text x={cx+stickW/2+30} y={fMarkY+4} fill="#64748b" fontSize={8}>Full</text>
 
-          {/* ── L mark (LOW — lower mark) ── */}
-          <line x1={stickX - stickW/2 - 8} y1={lMarkY} x2={stickX + stickW/2 + 8} y2={lMarkY}
-            stroke="#f87171" strokeWidth={1.8}/>
-          {/* L label — right side */}
-          <text x={stickX + stickW/2 + 14} y={lMarkY + 4} fill="#f87171" fontSize={12} fontWeight="700">L</text>
-          <text x={stickX + stickW/2 + 28} y={lMarkY + 4} fill="#94a3b8" fontSize={8}>Low level</text>
+          {/* ══ L MARK — LOW (lower) ══ */}
+          <line x1={cx-stickW/2-10} y1={lMarkY} x2={cx+stickW/2+10} y2={lMarkY}
+            stroke="#f87171" strokeWidth={2}/>
+          <rect x={cx-stickW/2-2} y={lMarkY-1} width={stickW+4} height={2} fill="#f87171" opacity={0.8}/>
+          <text x={cx+stickW/2+16} y={lMarkY+4} fill="#f87171" fontSize={13} fontWeight="900">L</text>
+          <text x={cx+stickW/2+30} y={lMarkY+4} fill="#64748b" fontSize={8}>Low</text>
 
-          {/* ── Arrow indicator pointing DOWN to current oil surface ── */}
-          {/* Arrow shaft */}
-          <line
-            x1={stickX - stickW/2 - 22} y1={arrowY - 18}
-            x2={stickX - stickW/2 - 22} y2={arrowY - 4}
-            stroke={statusColor} strokeWidth={2.5} strokeLinecap="round"
-            style={{ transition:"y1 0.35s ease, y2 0.35s ease" }}/>
-          {/* Arrowhead pointing DOWN ▼ */}
-          <polygon
-            points={`
-              ${stickX - stickW/2 - 28},${arrowY - 4}
-              ${stickX - stickW/2 - 16},${arrowY - 4}
-              ${stickX - stickW/2 - 22},${arrowY + 4}
-            `}
-            fill={statusColor}
-            style={{ transition:"all 0.35s ease" }}/>
-          {/* Arrow level % label */}
-          <text x={stickX - stickW/2 - 22} y={arrowY - 22}
-            textAnchor="middle" fill={statusColor} fontSize={9} fontWeight="700"
-            style={{ transition:"y 0.35s ease" }}>{level}%</text>
+          {/* Mid tick marks between L and F */}
+          {[0.25,0.5,0.75].map((t,i)=>{
+            const y = hatchTop + hatchH*t;
+            return <line key={i} x1={cx-stickW/2-5} y1={y} x2={cx+stickW/2+5} y2={y}
+              stroke="#94a3b8" strokeWidth={0.8} strokeDasharray="2 1"/>;
+          })}
 
-          {/* ── Status badge ── */}
-          <rect x={stickX - 36} y={SVG_H - 28} width={72} height={20} rx={10}
-            fill={`${statusColor}22`} stroke={statusColor} strokeWidth={1}/>
-          <text x={stickX} y={SVG_H - 14} textAnchor="middle" fill={statusColor} fontSize={11} fontWeight="700">
+          {/* ══ ARROW INDICATOR — points down to oil surface ══ */}
+          <g style={{transition:"transform 0.4s ease"}} transform={`translate(0, ${fillTopY - 68})`}>
+            {/* Shaft */}
+            <line x1={cx-stickW/2-24} y1={52} x2={cx-stickW/2-24} y2={66}
+              stroke={statusColor} strokeWidth={2.5} strokeLinecap="round"/>
+            {/* Arrowhead ▼ */}
+            <polygon
+              points={`${cx-stickW/2-30},64 ${cx-stickW/2-18},64 ${cx-stickW/2-24},72`}
+              fill={statusColor}/>
+            {/* Percentage label */}
+            <text x={cx-stickW/2-24} y={48} textAnchor="middle"
+              fill={statusColor} fontSize={10} fontWeight="800">{level}%</text>
+          </g>
+
+          {/* ══ STATUS BADGE at bottom ══ */}
+          <rect x={cx-38} y={SVG_H-26} width={76} height={20} rx={10}
+            fill={`${statusColor}20`} stroke={statusColor} strokeWidth={1.5}/>
+          <text x={cx} y={SVG_H-12} textAnchor="middle" fill={statusColor} fontSize={11} fontWeight="800">
             {statusLabel}
           </text>
-
-          {/* Minor tick marks on right edge of stick */}
-          {Array.from({ length: 9 }).map((_, i) => {
-            const y = stickTop + Math.round(((i+1)/10) * stickH);
-            return <line key={i}
-              x1={stickX + stickW/2} y1={y}
-              x2={stickX + stickW/2 + 5} y2={y}
-              stroke="#334155" strokeWidth={1}/>;
-          })}
         </svg>
 
-        {/* ── Vertical slider (right of stick) ── */}
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop: stickTop + 10 }}>
+        {/* ── Vertical slider ── */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, paddingTop:stickTop+10 }}>
           <span style={{ fontSize:9, color:"#64748b", fontWeight:700 }}>FULL</span>
           <input type="range" min={0} max={100} value={level}
             onChange={e => onLevelChange(parseInt(e.target.value))}
-            style={{ writingMode:"vertical-lr", direction:"rtl", width:22, height:stickH - 20, cursor:"pointer", accentColor:fillColor }}/>
+            style={{ writingMode:"vertical-lr", direction:"rtl", width:22, height:stickH-20, cursor:"pointer", accentColor:fillColor }}/>
           <span style={{ fontSize:9, color:"#64748b", fontWeight:700 }}>LOW</span>
         </div>
       </div>
 
-      {/* ── Oil Color selector ── */}
-      <div style={{ width:"100%", maxWidth:280 }}>
-        <div style={{ fontSize:10, color:"#64748b", marginBottom:7, textTransform:"uppercase", letterSpacing:"0.06em" }}>Oil Color / Condition</div>
-        <div style={{ display:"flex", gap:9, alignItems:"center" }}>
-          {colors.map((c, i) => (
-            <button key={i} onClick={() => onColorChange(i)} title={colorLabels[i]}
-              style={{
-                width:30, height:30, borderRadius:"50%",
-                border:`3px solid ${colorIdx===i ? "#f1f5f9" : "#334155"}`,
-                background:c, cursor:"pointer", transition:"all 0.2s", flexShrink:0,
-                boxShadow:colorIdx===i ? `0 0 0 3px ${c}66` : "none",
-                outline: i===0 ? "1px dashed #94a3b8" : "none",
-              }}/>
-          ))}
+      {/* ── Oil Color selector — realistic swatches ── */}
+      <div style={{ width:"100%", maxWidth:320 }}>
+        <div style={{ fontSize:10, color:"#64748b", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.06em" }}>Oil Color / Condition</div>
+        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          {OIL_PAINT.map((p, i) => {
+            const isSelected = colorIdx === i;
+            // Build a small CSS gradient for the swatch
+            const swatchGrad = p.stops.map(s => `${s.c}`);
+            const bg = i === 0
+              ? `linear-gradient(135deg, #f9f5d0 0%, #ede8a0 40%, #d8cc60 100%)`
+              : i === 1
+              ? `linear-gradient(135deg, #d4960a 0%, #b87008 35%, #7a4400 70%, #4a2800 100%)`
+              : i === 2
+              ? `linear-gradient(135deg, #5c2800 0%, #3a1600 40%, #200a00 100%)`
+              : `linear-gradient(135deg, #1a1008 0%, #0e0806 50%, #050302 100%)`;
+            return (
+              <button key={i} onClick={() => onColorChange(i)} title={p.label}
+                style={{
+                  width:36, height:36, borderRadius:"50%",
+                  border:`3px solid ${isSelected ? "#f1f5f9" : "#334155"}`,
+                  background: bg,
+                  cursor:"pointer", transition:"all 0.2s", flexShrink:0,
+                  boxShadow: isSelected
+                    ? `0 0 0 3px ${i===0?"#d4c520":i===1?"#b87008":i===2?"#5c2800":"#1a1008"}55, inset 0 1px 3px rgba(255,255,255,0.3)`
+                    : "inset 0 1px 2px rgba(255,255,255,0.15)",
+                  outline: i===0 ? "1px dashed #94a3b8" : "none",
+                }}/>
+            );
+          })}
         </div>
-        <div style={{ fontSize:11, color:"#94a3b8", marginTop:6, fontWeight:600 }}>{colorLabels[colorIdx]}</div>
+        <div style={{
+          fontSize:11, color:"#94a3b8", marginTop:7, fontWeight:600,
+          padding:"5px 10px", background:"#0f172a", borderRadius:6, display:"inline-block"
+        }}>
+          {OIL_PAINT[colorIdx]?.label}
+        </div>
       </div>
     </div>
   );
@@ -664,46 +1050,232 @@ function PrintModal({ info, miles, fluidStates, onClose }) {
 
   const handlePrint = () => {
     const win = window.open("","_blank");
-    win.document.write(`<!DOCTYPE html><html><head><title>Engine Oil Inspection — ${info.year} ${info.make} ${info.model}</title>
-<style>*{box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;margin:0;padding:32px;color:#0f172a;background:#fff}
-h1{margin:0 0 2px;font-size:24px}.sub{color:#64748b;font-size:12px;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:12px}
-.ig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px}
-.kv label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;display:block}.kv span{font-size:13px;font-weight:600}
-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
-th{background:#0f172a;color:#fff;padding:9px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
-td{padding:9px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}tr:nth-child(even)td{background:#f8fafc}
-.pass{color:#16a34a;font-weight:700}.mon{color:#ca8a04;font-weight:700}.svc{color:#dc2626;font-weight:700}.done{color:#2563eb;font-weight:700}
-.checks-title{font-size:13px;font-weight:700;color:#0f172a;margin:20px 0 10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px}
-.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
-.check-item{background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid #e2e8f0}
-.check-item .cl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;font-weight:700;margin-bottom:3px}
-.check-item .cv{font-size:12px;font-weight:700;margin-bottom:3px}
-.check-item .ch{font-size:10px;color:#64748b}
-.footer{margin-top:24px;font-size:10px;color:#94a3b8;padding-top:12px;border-top:1px solid #e2e8f0}</style></head><body>
-<h1>🛢️ Engine Oil Inspection Report</h1>
-<div class="sub">Date: ${date} &nbsp;|&nbsp; Mileage: ${parseInt(miles).toLocaleString()} mi &nbsp;|&nbsp; Tech: ${info.techName}</div>
-<div class="ig">
-<div class="kv"><label>Customer</label><span>${info.custName}</span></div>
-<div class="kv"><label>Phone</label><span>${info.custPhone}</span></div>
-<div class="kv"><label>Email</label><span>${info.custEmail}</span></div>
-<div class="kv"><label>Address</label><span>${info.custAddress}</span></div>
-<div class="kv"><label>Vehicle</label><span>${info.year} ${info.make} ${info.model}</span></div>
-<div class="kv"><label>VIN</label><span>${info.vin}</span></div>
+
+    // Build vehicle photo thumbnails HTML
+    const vehiclePhotoHTML = Object.entries(info._vehiclePhotos||{}).map(([id,src])=>{
+      const angle = VEHICLE_ANGLES.find(a=>a.id===id);
+      return `<div class="photo-cell">
+        <img src="${src}" alt="${angle?.label||id}"/>
+        <div class="photo-label">${angle?.icon||""} ${angle?.label||id}</div>
+      </div>`;
+    }).join("");
+
+    const wheelPhotoHTML = Object.entries(info._wheelPhotos||{}).map(([id,src])=>{
+      const wheel = WHEEL_SPOTS.find(w=>w.id===id);
+      return `<div class="photo-cell">
+        <img src="${src}" alt="${wheel?.label||id}"/>
+        <div class="photo-label">${wheel?.icon||""} ${wheel?.label||id}</div>
+      </div>`;
+    }).join("");
+
+    const fluidPhotoHTML = Object.entries(info._fluidPhotos||{}).map(([id,src])=>{
+      const fluid = FLUIDS.find(f=>f.id===id);
+      return `<div class="photo-cell">
+        <img src="${src}" alt="${fluid?.label||id}"/>
+        <div class="photo-label">${fluid?.icon||""} ${fluid?.label||id}</div>
+      </div>`;
+    }).join("");
+
+    // Overall status color
+    const statusColorMap = {"Pass":"#16a34a","Monitor":"#ca8a04","Service Now":"#dc2626","Already Serviced":"#2563eb"};
+
+    win.document.write(`<!DOCTYPE html><html><head>
+<title>Engine Oil Inspection — ${info.year} ${info.make} ${info.model}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#0f172a;padding:0}
+  /* PAGE HEADER */
+  .page-header{background:#0f172a;color:#fff;padding:24px 32px;display:flex;justify-content:space-between;align-items:center}
+  .page-header h1{font-size:22px;font-weight:800;letter-spacing:-0.02em}
+  .page-header .badge{background:#f59e0b;color:#0f172a;padding:4px 14px;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:0.06em}
+  .page-header .meta{font-size:11px;color:#94a3b8;margin-top:4px}
+  /* SECTIONS */
+  .section{padding:20px 32px;border-bottom:1px solid #e2e8f0}
+  .section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  /* INFO GRID */
+  .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 24px}
+  .kv{}
+  .kv label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700;display:block;margin-bottom:2px}
+  .kv span{font-size:13px;font-weight:600;color:#0f172a}
+  /* STATUS BADGE */
+  .status-badge{display:inline-block;padding:5px 16px;border-radius:99px;font-size:13px;font-weight:800;letter-spacing:0.04em}
+  /* OIL SUMMARY BOX */
+  .oil-summary{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 20px;margin-bottom:0}
+  .oil-summary-row{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+  .oil-stat{text-align:center;min-width:80px}
+  .oil-stat .val{font-size:28px;font-weight:900;line-height:1}
+  .oil-stat .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700;margin-top:3px}
+  /* DIPSTICK VISUAL */
+  .dipstick-bar{width:100%;max-width:400px;height:32px;background:#e2e8f0;border-radius:16px;overflow:hidden;position:relative;margin:6px 0}
+  .dipstick-fill{height:100%;border-radius:16px;transition:width .3s;position:relative}
+  .dipstick-markers{position:relative;width:100%;max-width:400px;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8;font-weight:700;margin-top:2px}
+  /* CHECKS TABLE */
+  .checks-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .check-card{border-radius:8px;padding:11px 13px;border-left:4px solid #e2e8f0;background:#f8fafc}
+  .check-card .cc-icon-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;margin-bottom:4px}
+  .check-card .cc-val{font-size:13px;font-weight:800;margin-bottom:3px}
+  .check-card .cc-hint{font-size:10px;color:#475569;line-height:1.4}
+  .check-card.urgent{background:#fef2f2}
+  .check-card.warning{background:#fffbeb}
+  /* PHOTOS */
+  .photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .photo-cell img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;display:block}
+  .photo-cell .photo-label{font-size:9px;color:#64748b;text-align:center;margin-top:4px;font-weight:700}
+  .no-photo{background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:6px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8}
+  /* TECH NOTES */
+  .notes-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;font-size:12px;color:#334155;line-height:1.6;min-height:48px}
+  /* SIGNATURE */
+  .sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:8px}
+  .sig-line{border-bottom:1px solid #334155;height:36px;margin-bottom:4px}
+  .sig-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;font-weight:700}
+  /* FOOTER */
+  .page-footer{background:#f8fafc;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #e2e8f0;font-size:10px;color:#94a3b8}
+  /* DIVIDER */
+  .divider{height:1px;background:#e2e8f0;margin:0}
+  /* RECOMMENDATION BOX */
+  .rec-box{border-radius:8px;padding:10px 14px;font-size:11px;font-weight:600;margin-top:10px}
+  @media print{body{padding:0}.section{page-break-inside:avoid}}
+</style>
+</head><body>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div>
+    <h1>🛢️ Engine Oil Inspection Report</h1>
+    <div class="meta">Date: ${date} &nbsp;·&nbsp; Mileage: ${parseInt(miles).toLocaleString()} mi &nbsp;·&nbsp; Technician: ${info.techName}</div>
+  </div>
+  <div class="badge">OFFICIAL RECORD</div>
 </div>
-<table><thead><tr><th>Fluid</th><th>Overall Status</th><th>Level</th><th>Color/Condition</th><th>Mile Recommendation</th><th>Tech Notes</th></tr></thead>
-<tbody>${rows.map(r=>`<tr><td><strong>${r.icon} ${r.fluid}</strong></td><td class="${r.alreadyDone?"done":r.status==="Pass"?"pass":r.status==="Monitor"?"mon":"svc"}">${r.status}</td><td>${r.level}</td><td>${r.condition}</td><td style="font-size:10px">${r.rec}</td><td style="font-size:10px;color:#64748b">${r.note||"—"}</td></tr>`).join("")}</tbody></table>
+
+<!-- CUSTOMER & VEHICLE INFO -->
+<div class="section">
+  <div class="section-title">👤 Customer &amp; Vehicle Information</div>
+  <div class="info-grid">
+    <div class="kv"><label>Customer Name</label><span>${info.custName}</span></div>
+    <div class="kv"><label>Phone</label><span>${info.custPhone}</span></div>
+    <div class="kv"><label>Email</label><span>${info.custEmail}</span></div>
+    <div class="kv" style="grid-column:1/-1"><label>Address</label><span>${info.custAddress}</span></div>
+    <div class="kv"><label>Year / Make / Model</label><span>${info.year} ${info.make} ${info.model}</span></div>
+    <div class="kv"><label>VIN</label><span style="font-family:monospace;letter-spacing:.08em">${info.vin}</span></div>
+    <div class="kv"><label>Mileage at Inspection</label><span>${parseInt(miles).toLocaleString()} mi</span></div>
+  </div>
+</div>
+
+<!-- OIL LEVEL & OVERALL STATUS -->
+${rows.map(r => {
+  const lvl = parseInt(r.level);
+  const fillColor = r.alreadyDone?"#2563eb":r.status==="Pass"?"#16a34a":r.status==="Monitor"?"#ca8a04":"#dc2626";
+  const statusLabel = r.alreadyDone?"Already Serviced":r.status||"Not Set";
+  const recStyle = r.rec.includes("Overdue")?"background:#fef2f2;border:1px solid #fecaca;color:#dc2626":r.rec.includes("soon")?"background:#fffbeb;border:1px solid #fde68a;color:#92400e":"background:#f0fdf4;border:1px solid #bbf7d0;color:#166534";
+  return `
+<div class="section">
+  <div class="section-title">🛢️ Oil Level &amp; Condition Summary</div>
+  <div class="oil-summary">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Current Oil Level</div>
+        <div style="font-size:36px;font-weight:900;color:${lvl<30?"#dc2626":lvl<50?"#f97316":"#16a34a"};line-height:1">${r.level}</div>
+        <div style="font-size:10px;color:#64748b;margin-top:3px">${lvl<30?"⚠️ CRITICALLY LOW":lvl<50?"⚠️ LOW — Add Oil":lvl<=80?"✅ Good Range":"⚠️ Overfilled"}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Overall Status</div>
+        <span class="status-badge" style="background:${fillColor}22;color:${fillColor};border:2px solid ${fillColor}">${statusLabel}</span>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Oil Color / Condition</div>
+        <div style="font-size:14px;font-weight:700;color:#0f172a">${r.condition}</div>
+      </div>
+    </div>
+    <!-- Dipstick Level Bar -->
+    <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:4px">DIPSTICK LEVEL INDICATOR</div>
+    <div class="dipstick-bar">
+      <div class="dipstick-fill" style="width:${lvl}%;background:${lvl<30?"#ef4444":lvl<50?"#f97316":lvl<=80?"#22c55e":"#eab308"}"></div>
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5)">${r.level}</div>
+    </div>
+    <div class="dipstick-markers"><span>ADD OIL</span><span>LOW</span><span style="color:#22c55e;font-weight:800">✓ O.K.</span><span>FULL</span><span>TOO FULL</span></div>
+    ${r.rec !== "—" ? `<div class="rec-box" style="${recStyle}">🔧 Mile-Based Recommendation: ${r.rec}</div>` : ""}
+    ${r.note ? `<div style="margin-top:10px;padding:10px 12px;background:#f1f5f9;border-radius:6px;font-size:11px;color:#334155"><strong>Tech Note:</strong> ${r.note}</div>` : ""}
+  </div>
+</div>`;
+}).join("")}
+
+<!-- DETAILED INSPECTION CHECKS -->
 ${rows.map(r => r.checks.length > 0 ? `
-<div class="checks-title">🔬 Detailed Oil Inspection — ${r.fluid}</div>
-<div class="check-grid">
-${r.checks.map(c=>`<div class="check-item" style="border-left-color:${c.color}">
-  <div class="cl">${c.icon} ${c.label}</div>
-  <div class="cv" style="color:${c.color}">${c.selected}</div>
-  <div class="ch">${c.hint}</div>
-</div>`).join("")}
+<div class="section">
+  <div class="section-title">🔬 Detailed Oil Inspection Checks</div>
+  <div class="checks-wrap">
+    ${r.checks.map(c => {
+      const isUrgent = c.color==="#ef4444"||c.color==="#dc2626";
+      const isWarn   = c.color==="#f97316"||c.color==="#eab308";
+      return `<div class="check-card ${isUrgent?"urgent":isWarn?"warning":""}" style="border-left-color:${c.color}">
+        <div class="cc-icon-label">${c.icon} ${c.label}</div>
+        <div class="cc-val" style="color:${c.color}">${c.selected}</div>
+        <div class="cc-hint">${c.hint}</div>
+      </div>`;
+    }).join("")}
+  </div>
+  ${r.checks.some(c=>c.color==="#ef4444"||c.color==="#dc2626") ? `
+  <div style="margin-top:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;font-size:11px;color:#991b1b;font-weight:600">
+    ⚠️ <strong>URGENT ACTION REQUIRED:</strong> One or more checks indicate a critical condition. Do not operate vehicle until inspected by a qualified technician.
+  </div>` : ""}
 </div>` : "").join("")}
-<div class="footer">Generated by Vehicle Engine Oil Inspection System · ${date}</div>
+
+<!-- 360° VEHICLE PHOTOS -->
+${vehiclePhotoHTML ? `
+<div class="section">
+  <div class="section-title">📸 360° Vehicle Documentation</div>
+  <div class="photo-grid">${vehiclePhotoHTML}</div>
+</div>` : ""}
+
+<!-- WHEEL & TIRE PHOTOS -->
+${wheelPhotoHTML ? `
+<div class="section">
+  <div class="section-title">🔵 Wheel &amp; Tire Documentation</div>
+  <div class="photo-grid">${wheelPhotoHTML}</div>
+</div>` : ""}
+
+<!-- OIL / DIPSTICK PHOTOS -->
+${fluidPhotoHTML ? `
+<div class="section">
+  <div class="section-title">🛢️ Oil / Dipstick Photo Evidence</div>
+  <div class="photo-grid">${fluidPhotoHTML}</div>
+</div>` : ""}
+
+<!-- SIGNATURE BLOCK -->
+<div class="section">
+  <div class="section-title">✍️ Signatures &amp; Authorization</div>
+  <div class="sig-row">
+    <div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Technician Signature</div>
+      <div style="font-size:11px;color:#334155;margin-top:4px">${info.techName}</div>
+    </div>
+    <div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Customer Signature</div>
+      <div style="font-size:11px;color:#334155;margin-top:4px">${info.custName}</div>
+    </div>
+    <div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Date</div>
+      <div style="font-size:11px;color:#334155;margin-top:4px">${date}</div>
+    </div>
+  </div>
+  <div style="margin-top:14px;font-size:9px;color:#94a3b8;line-height:1.6">
+    By signing above, the customer acknowledges receipt of this inspection report and authorizes any recommended services. This report documents the vehicle condition at the time of inspection only. All findings are based on visual and physical inspection by the technician named above.
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="page-footer">
+  <span>🛢️ Vehicle Engine Oil Inspection System</span>
+  <span>Report ID: ${Math.random().toString(36).substr(2,9).toUpperCase()} · ${date}</span>
+  <span>${info.year} ${info.make} ${info.model} · VIN: ${info.vin}</span>
+</div>
+
 </body></html>`);
-    win.document.close(); win.print();
+    win.document.close();
+    win.print();
   };
 
   const handleEmail = () => {
@@ -773,13 +1345,35 @@ ${r.checks.map(c=>`<div class="check-item" style="border-left-color:${c.color}">
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [info, setInfo] = useState({ custName:"", custPhone:"", custEmail:"", custAddress:"", year:"", make:"", model:"", vin:"", techName:"" });
+  const [info, setInfo] = useState(() => {
+    const savedVin   = localStorage.getItem("oil_inspection_vin")   || "";
+    const savedMake  = localStorage.getItem("oil_inspection_make")  || "";
+    const savedModel = localStorage.getItem("oil_inspection_model") || "";
+    const savedYear  = localStorage.getItem("oil_inspection_year")  || "";
+    return { custName:"", custPhone:"", custEmail:"", custAddress:"", year:savedYear, make:savedMake, model:savedModel, vin:savedVin, techName:"" };
+  });
+
+  // Restore cached VIN result for specs display on reload
+  const [vinResult, setVinResult] = useState(() => {
+    try {
+      const cached = localStorage.getItem("oil_inspection_vehicle");
+      if (cached) {
+        const d = JSON.parse(cached);
+        // Reconstruct a vinResult-compatible object from cache
+        return { Make: d.make?.toUpperCase(), Model: d.model?.toUpperCase(), ModelYear: d.year,
+          EngineCylinders: d.cylinders, DisplacementL: d.displacement,
+          FuelTypePrimary: d.fuelType, DriveType: d.driveType,
+          BodyClass: d.bodyClass, PlantCity: d.plantCity, PlantCountry: d.plantCountry,
+          _fromCache: true };
+      }
+    } catch {}
+    return null;
+  });
   const [miles, setMiles] = useState("");
   const [vehiclePhotos, setVehiclePhotos] = useState({});
   const [wheelPhotos, setWheelPhotos] = useState({});
   const [fluidPhotos, setFluidPhotos] = useState({});
   const [vinLoading, setVinLoading] = useState(false);
-  const [vinResult, setVinResult] = useState(null);
   const [showReport, setShowReport] = useState(false);
   const [fluidStates, setFluidStates] = useState(
     Object.fromEntries(FLUIDS.map(f => [f.id, {
@@ -788,10 +1382,17 @@ export default function App() {
     }]))
   );
 
-  const upInfo  = (k, v) => setInfo(p => ({ ...p, [k]:v }));
+  const upInfo = (k, v) => {
+    setInfo(p => ({ ...p, [k]:v }));
+    // Persist vehicle identity fields to browser memory
+    if (k === "vin")   localStorage.setItem("oil_inspection_vin",   v);
+    if (k === "make")  localStorage.setItem("oil_inspection_make",  v);
+    if (k === "model") localStorage.setItem("oil_inspection_model", v);
+    if (k === "year")  localStorage.setItem("oil_inspection_year",  v);
+  };
   const upFluid = (id, p) => setFluidStates(s => ({ ...s, [id]:{ ...s[id], ...p } }));
 
-  // ── VIN lookup via NHTSA (with no-cors fallback) ──
+  // ── VIN lookup via NHTSA ──
   const lookupVin = async () => {
     if (!isValidVin(info.vin)) return;
     setVinLoading(true); setVinResult(null);
@@ -803,9 +1404,25 @@ export default function App() {
       const v = data.Results?.[0];
       if (v && v.Make && v.Make !== "0" && v.Make !== "") {
         setVinResult(v);
-        if (v.ModelYear && v.ModelYear !== "0") upInfo("year", v.ModelYear);
-        if (v.Make)  upInfo("make",  v.Make.charAt(0).toUpperCase() + v.Make.slice(1).toLowerCase());
-        if (v.Model) upInfo("model", v.Model.charAt(0).toUpperCase() + v.Model.slice(1).toLowerCase());
+        const make  = v.Make.charAt(0).toUpperCase()  + v.Make.slice(1).toLowerCase();
+        const model = v.Model.charAt(0).toUpperCase() + v.Model.slice(1).toLowerCase();
+        const year  = v.ModelYear;
+        if (year  && year  !== "0") upInfo("year",  year);
+        if (v.Make)  upInfo("make",  make);
+        if (v.Model) upInfo("model", model);
+        // Save full vehicle data to cache
+        const cacheData = {
+          vin: info.vin.trim(), year, make, model,
+          cylinders: v.EngineCylinders, displacement: v.DisplacementL,
+          fuelType: v.FuelTypePrimary, driveType: v.DriveType,
+          bodyClass: v.BodyClass, plantCity: v.PlantCity, plantCountry: v.PlantCountry,
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem("oil_inspection_vin",     info.vin.trim());
+        localStorage.setItem("oil_inspection_make",    make);
+        localStorage.setItem("oil_inspection_model",   model);
+        localStorage.setItem("oil_inspection_year",    year || "");
+        localStorage.setItem("oil_inspection_vehicle", JSON.stringify(cacheData));
       } else {
         setVinResult({ error: true, msg: "No vehicle found for this VIN" });
       }
@@ -899,17 +1516,27 @@ export default function App() {
                 {vinLoading ? "⏳ Looking up…" : "🔍 Decode VIN"}
               </button>
             </div>
-            <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
               <span style={{ fontSize:10, color: isValidVin(info.vin)?"#22c55e":info.vin.length>0?"#f87171":"#475569" }}>
                 {info.vin.length}/17 characters
                 {isValidVin(info.vin) ? " ✓" : info.vin.length > 0 ? ` — need ${17-info.vin.length} more` : ""}
               </span>
+              {isValidVin(info.vin) && (
+                <span style={{ fontSize:10, color:"#22c55e", display:"flex", alignItems:"center", gap:4 }}>
+                  💾 Saved to browser memory
+                  <button onClick={()=>{ localStorage.removeItem("oil_inspection_vin"); localStorage.removeItem("oil_inspection_make"); localStorage.removeItem("oil_inspection_model"); localStorage.removeItem("oil_inspection_year"); upInfo("vin",""); }}
+                    style={{ fontSize:9, color:"#f87171", background:"none", border:"none", cursor:"pointer", padding:0, textDecoration:"underline" }}>
+                    clear
+                  </button>
+                </span>
+              )}
             </div>
             {vinResult && !vinResult.error && (
               <div style={{ marginTop:6, fontSize:11, color:"#22c55e", background:"#052e16", borderRadius:8, padding:"8px 12px", lineHeight:1.5 }}>
                 ✅ <strong>{vinResult.ModelYear} {vinResult.Make} {vinResult.Model}</strong>
                 {vinResult.BodyClass ? ` — ${vinResult.BodyClass}` : ""}
                 {vinResult.EngineCylinders ? ` · ${vinResult.EngineCylinders}-cyl` : ""}
+                {vinResult._fromCache && <span style={{ fontSize:9, color:"#4ade80", marginLeft:8 }}>💾 loaded from cache</span>}
               </div>
             )}
             {vinResult?.error && (
@@ -917,6 +1544,8 @@ export default function App() {
                 ❌ {vinResult.msg}
               </div>
             )}
+            {/* Vehicle Specs Card — engine, oil type, tools */}
+            <VehicleSpecsCard vinData={vinResult} make={info.make} model={info.model}/>
           </div>
         </div>
 
@@ -1005,7 +1634,7 @@ export default function App() {
         <div style={{ height:40 }}/>
       </div>
 
-      {showReport && <PrintModal info={info} miles={miles} fluidStates={fluidStates} onClose={()=>setShowReport(false)}/>}
+      {showReport && <PrintModal info={{...info, _vehiclePhotos:vehiclePhotos, _wheelPhotos:wheelPhotos, _fluidPhotos:fluidPhotos}} miles={miles} fluidStates={fluidStates} onClose={()=>setShowReport(false)}/>}
     </div>
   );
 }
