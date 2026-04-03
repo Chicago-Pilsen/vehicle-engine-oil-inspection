@@ -1357,10 +1357,24 @@ ${baSection("🚗 Engine Bay &amp; Oil Cap — Before &amp; After", [
   ["Engine Bay Overview", "engineBay_before", "engineBay_after"],
   ["Oil Cap",             "oilCap_before",    "oilCap_after"],
 ])}
-${baSection("💧 Engine Oil Leak — Before &amp; After", [
-  ["Oil Leak Area",        "oilLeak_before",       "oilLeak_after"],
-  ["Ground / Floor Stain", "oilLeakGround_before", "oilLeakGround_after"],
-])}
+${(() => {
+  const drainSrc  = baPhotos["oilDrain_during"];
+  const pourSrc   = baPhotos["oilPour_during"];
+  const bottleSrc = baPhotos["oilBottle_photo"];
+  const any = drainSrc||pourSrc||bottleSrc;
+  if (!any) return "";
+  const cell = (label, src) => src
+    ? `<div class="photo-cell"><img src="${src}"/><div class="photo-label">${label}</div></div>`
+    : "";
+  return `<div class="section">
+  <div class="section-title">📸 Service Proof &amp; Labels</div>
+  <div class="photo-grid">
+    ${cell("Oil Draining", drainSrc)}
+    ${cell("New Oil Being Poured", pourSrc)}
+    ${cell("Oil Bottle / Label", bottleSrc)}
+  </div>
+</div>`;
+})()}
 
 <!-- SIGNATURE BLOCK -->
 <div class="section">
@@ -1592,8 +1606,8 @@ export default function App() {
             { l:"Dipstick & Dash",  d:!!(baPhotos.dipstick_before&&baPhotos.dipstick_after&&baPhotos.dashboard_before&&baPhotos.dashboard_after) },
             { l:"Filter & Plug",    d:!!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after) },
             { l:"Air Filters",      d:!!(baPhotos.airFilter_before&&baPhotos.airFilter_after&&baPhotos.cabinFilter_before&&baPhotos.cabinFilter_after) },
-            { l:"Engine Bay",       d:!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after) },
-            { l:"Oil Leak",         d:!!(baPhotos.oilLeak_before&&baPhotos.oilLeak_after) },
+            { l:"Engine Bay",       d:!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilDrain_during&&baPhotos.oilPour_during&&baPhotos.oilCap_before&&baPhotos.oilCap_after) },
+            { l:"Labels & Stickers",d:!!baPhotos.oilBottle_photo },
           ].map((s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <div style={{ width:20, height:20, borderRadius:"50%", background:s.d?"#166534":"#334155", border:`2px solid ${s.d?"#22c55e":"#475569"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:s.d?"#bbf7d0":"#64748b", flexShrink:0, fontWeight:800 }}>{s.d?"✓":i+1}</div>
@@ -1801,46 +1815,64 @@ export default function App() {
 
         {/* ── STEP 8: Engine Bay & Oil Service Proof ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
-          baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after
+          baPhotos.engineBay_before&&baPhotos.engineBay_after&&
+          baPhotos.oilDrain_during&&baPhotos.oilPour_during&&baPhotos.oilCap_before&&baPhotos.oilCap_after
           ?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={8} title="Engine Bay & Oil Cap — Before & After"
-            complete={!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after)}/>
+          <SectionHeader step={8} title="Engine Bay & Oil Service Proof"
+            complete={!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilDrain_during&&baPhotos.oilPour_during&&baPhotos.oilCap_before&&baPhotos.oilCap_after)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Document the engine bay and oil cap condition before and after service.
+            Document the engine bay condition and capture proof-of-service photos during the oil change.
           </p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
+
+            {/* Engine bay before/after */}
             <BeforeAfterPair
               label="Engine Bay Overview" icon="🚗"
               desc="Overall engine bay — belts, hoses, leaks, general condition"
               before={baPhotos.engineBay_before} after={baPhotos.engineBay_after}
               onBefore={v=>setBA("engineBay_before",v)} onAfter={v=>setBA("engineBay_after",v)}/>
+
+            {/* Oil cap before/after */}
             <BeforeAfterPair
               label="Oil Cap" icon="🔵"
               desc="Cap condition and debris around fill hole before & after"
               before={baPhotos.oilCap_before} after={baPhotos.oilCap_after}
               onBefore={v=>setBA("oilCap_before",v)} onAfter={v=>setBA("oilCap_after",v)}/>
           </div>
+
+          {/* Single-photo proof shots during service */}
+          <div style={{ marginTop:14 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>
+              📸 During-Service Proof Shots
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
+
+              {/* Oil drain undercarriage */}
+              {[
+                { key:"oilDrain_during",  label:"Oil Draining",     icon:"🕳️",  desc:"Undercarriage — oil draining into pan" },
+                { key:"oilPour_during",   label:"New Oil Being Poured", icon:"🫙", desc:"Bottle visible — show brand & viscosity" },
+              ].map(({ key, label, icon, desc }) => {
+                const photo = baPhotos[key];
+                return (
+                  <PhotoTile key={key} label={label} icon={icon} desc={desc} compact
+                    photo={photo} onCapture={v => setBA(key, v)} required={false}/>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* ── STEP 9: Engine Oil Leak — Before & After ── */}
+        {/* ── STEP 9: Oil Bottle Label ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
-          baPhotos.oilLeak_before&&baPhotos.oilLeak_after?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={9} title="Engine Oil Leak — Before & After"
-            complete={!!(baPhotos.oilLeak_before&&baPhotos.oilLeak_after)}/>
+          baPhotos.oilBottle_photo?"#22c55e":"#334155"}` }}>
+          <SectionHeader step={9} title="Oil Product Proof"
+            complete={!!baPhotos.oilBottle_photo}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Document any oil leak areas — gaskets, seals, drain plug, oil pan, or undercarriage. Capture before service and after to confirm resolved or note ongoing leaks.
+            Capture the oil bottle label — brand, viscosity, and API rating must be visible.
           </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
-            <BeforeAfterPair
-              label="Oil Leak Area" icon="💧"
-              desc="Leak location — undercarriage, gasket, seal, oil pan, drain plug"
-              before={baPhotos.oilLeak_before} after={baPhotos.oilLeak_after}
-              onBefore={v=>setBA("oilLeak_before",v)} onAfter={v=>setBA("oilLeak_after",v)}/>
-            <BeforeAfterPair
-              label="Ground / Floor Stain" icon="🟤"
-              desc="Oil drip stain on ground beneath the vehicle"
-              before={baPhotos.oilLeakGround_before} after={baPhotos.oilLeakGround_after}
-              onBefore={v=>setBA("oilLeakGround_before",v)} onAfter={v=>setBA("oilLeakGround_after",v)}/>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12 }}>
+            <PhotoTile label="Oil Bottle / Label" icon="🧴" desc="Brand, viscosity, API rating visible"
+              photo={baPhotos.oilBottle_photo} onCapture={v=>setBA("oilBottle_photo",v)} required={false}/>
           </div>
         </div>
 
