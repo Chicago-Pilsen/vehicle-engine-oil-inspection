@@ -1353,32 +1353,6 @@ ${baSection("💨 Air Filters — Before &amp; After", [
   ["Engine Air Filter", "airFilter_before",   "airFilter_after"],
   ["Cabin Air Filter",  "cabinFilter_before", "cabinFilter_after"],
 ])}
-${baSection("🚗 Engine Bay &amp; Oil Cap — Before &amp; After", [
-  ["Engine Bay Overview", "engineBay_before", "engineBay_after"],
-  ["Oil Cap",             "oilCap_before",    "oilCap_after"],
-])}
-${(() => {
-  const drainSrc  = baPhotos["oilDrain_during"];
-  const pourSrc   = baPhotos["oilPour_during"];
-  const bottleSrc = baPhotos["oilBottle_photo"];
-  const mileSrc   = baPhotos["mileageSticker_photo"];
-  const windSrc   = baPhotos["windshieldSticker_photo"];
-  const any = drainSrc||pourSrc||bottleSrc||mileSrc||windSrc;
-  if (!any) return "";
-  const cell = (label, src) => src
-    ? `<div class="photo-cell"><img src="${src}"/><div class="photo-label">${label}</div></div>`
-    : "";
-  return `<div class="section">
-  <div class="section-title">📸 Service Proof &amp; Labels</div>
-  <div class="photo-grid">
-    ${cell("Oil Draining", drainSrc)}
-    ${cell("New Oil Being Poured", pourSrc)}
-    ${cell("Oil Bottle / Label", bottleSrc)}
-    ${cell("Mileage Sticker", mileSrc)}
-    ${cell("Windshield Sticker", windSrc)}
-  </div>
-</div>`;
-})()}
 
 <!-- SIGNATURE BLOCK -->
 <div class="section">
@@ -1578,7 +1552,7 @@ export default function App() {
   // ── Completeness ──
   const allVehiclePhotos = ["exterior_front","exterior_rear","exterior_left","exterior_right"].every(k => baPhotos[k+"_before"] && baPhotos[k+"_after"]);
   const allWheelPhotos   = ["wheel_fl","wheel_fr","wheel_rl","wheel_rr"].every(k => baPhotos[k+"_before"] && baPhotos[k+"_after"]);
-  const allFluidPhotos = true; // Photo upload removed from oil inspection step
+  const allFluidPhotos   = FLUIDS.filter(f => fluidStates[f.id]?.toggled).every(f => fluidPhotos[f.id]);
   const infoValid = isValidName(info.custName) && isValidPhone(info.custPhone) &&
     isValidEmail(info.custEmail) && isValidAddress(info.custAddress) &&
     isValidYear(info.year) && isValidMake(info.make) && isValidModel(info.model) &&
@@ -1603,15 +1577,10 @@ export default function App() {
         {/* Progress */}
         <div style={{ background:"#1e293b", borderRadius:12, padding:"12px 16px", marginBottom:18, display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
           {[
-            { l:"Customer Info",    d:infoValid },
-            { l:"360° Photos",      d:allVehiclePhotos },
-            { l:"Wheel Photos",     d:allWheelPhotos },
-            { l:"Oil Inspection",   d:allFluidPhotos },
-            { l:"Dipstick & Dash",  d:!!(baPhotos.dipstick_before&&baPhotos.dipstick_after&&baPhotos.dashboard_before&&baPhotos.dashboard_after) },
-            { l:"Filter & Plug",    d:!!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after) },
-            { l:"Air Filters",      d:!!(baPhotos.airFilter_before&&baPhotos.airFilter_after&&baPhotos.cabinFilter_before&&baPhotos.cabinFilter_after) },
-            { l:"Engine Bay",       d:!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilDrain_during&&baPhotos.oilPour_during&&baPhotos.oilCap_before&&baPhotos.oilCap_after) },
-            { l:"Labels & Stickers",d:!!(baPhotos.oilBottle_photo&&baPhotos.mileageSticker_photo&&baPhotos.windshieldSticker_photo) },
+            { l:"Customer Info", d:infoValid },
+            { l:"360° Photos",   d:allVehiclePhotos },
+            { l:"Wheel Photos",  d:allWheelPhotos },
+            { l:"Fluid Photos",  d:allFluidPhotos },
           ].map((s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <div style={{ width:20, height:20, borderRadius:"50%", background:s.d?"#166534":"#334155", border:`2px solid ${s.d?"#22c55e":"#475569"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:s.d?"#bbf7d0":"#64748b", flexShrink:0, fontWeight:800 }}>{s.d?"✓":i+1}</div>
@@ -1759,6 +1728,19 @@ export default function App() {
           <SectionHeader step={4} title="Engine Oil Inspection" complete={allFluidPhotos}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>Upload a photo of the dipstick, then complete all inspection checks below.</p>
 
+          {/* Fluid photo tiles */}
+          <div style={{ marginBottom:18 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>
+              Fluid Photos — required for each inspected fluid
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))", gap:10 }}>
+              {FLUIDS.filter(f => fluidStates[f.id]?.toggled).map(f => (
+                <PhotoTile key={f.id} label={f.label} icon={f.icon} desc="" compact
+                  photo={fluidPhotos[f.id]} onCapture={p=>setFluidPhotos(v=>({...v,[f.id]:p}))}/>
+              ))}
+            </div>
+          </div>
+
           {/* Fluid cards */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:16, alignItems:"start" }}>
             {FLUIDS.map(f => (
@@ -1817,79 +1799,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── STEP 8: Engine Bay & Oil Service Proof ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
-          baPhotos.engineBay_before&&baPhotos.engineBay_after&&
-          baPhotos.oilDrain_during&&baPhotos.oilPour_during&&baPhotos.oilCap_before&&baPhotos.oilCap_after
-          ?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={8} title="Engine Bay & Oil Service Proof"
-            complete={!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilDrain_during&&baPhotos.oilPour_during&&baPhotos.oilCap_before&&baPhotos.oilCap_after)}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Document the engine bay condition and capture proof-of-service photos during the oil change.
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
-
-            {/* Engine bay before/after */}
-            <BeforeAfterPair
-              label="Engine Bay Overview" icon="🚗"
-              desc="Overall engine bay — belts, hoses, leaks, general condition"
-              before={baPhotos.engineBay_before} after={baPhotos.engineBay_after}
-              onBefore={v=>setBA("engineBay_before",v)} onAfter={v=>setBA("engineBay_after",v)}/>
-
-            {/* Oil cap before/after */}
-            <BeforeAfterPair
-              label="Oil Cap" icon="🔵"
-              desc="Cap condition and debris around fill hole before & after"
-              before={baPhotos.oilCap_before} after={baPhotos.oilCap_after}
-              onBefore={v=>setBA("oilCap_before",v)} onAfter={v=>setBA("oilCap_after",v)}/>
-          </div>
-
-          {/* Single-photo proof shots during service */}
-          <div style={{ marginTop:14 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>
-              📸 During-Service Proof Shots
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
-
-              {/* Oil drain undercarriage */}
-              {[
-                { key:"oilDrain_during",  label:"Oil Draining",     icon:"🕳️",  desc:"Undercarriage — oil draining into pan" },
-                { key:"oilPour_during",   label:"New Oil Being Poured", icon:"🫙", desc:"Bottle visible — show brand & viscosity" },
-              ].map(({ key, label, icon, desc }) => {
-                const photo = baPhotos[key];
-                return (
-                  <PhotoTile key={key} label={label} icon={icon} desc={desc} compact
-                    photo={photo} onCapture={v => setBA(key, v)} required={false}/>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* ── STEP 9: Labels & Stickers ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
-          baPhotos.oilBottle_photo&&baPhotos.mileageSticker_photo&&baPhotos.windshieldSticker_photo
-          ?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={9} title="Labels & Service Stickers"
-            complete={!!(baPhotos.oilBottle_photo&&baPhotos.mileageSticker_photo&&baPhotos.windshieldSticker_photo)}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Capture proof of the oil product used and the service reminder stickers placed on the vehicle.
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12 }}>
-            {[
-              { key:"oilBottle_photo",        label:"Oil Bottle / Label",     icon:"🧴", desc:"Brand, viscosity, API rating visible" },
-              { key:"mileageSticker_photo",    label:"Mileage Sticker",        icon:"📋", desc:"Next service reminder sticker filled out" },
-              { key:"windshieldSticker_photo", label:"Windshield Sticker",     icon:"🪟", desc:"Reminder sticker placed on windshield" },
-            ].map(({ key, label, icon, desc }) => {
-              const photo = baPhotos[key];
-              return (
-                <PhotoTile key={key} label={label} icon={icon} desc={desc}
-                  photo={photo} onCapture={v => setBA(key, v)} required={false} compact={false}/>
-              );
-            })}
-          </div>
-        </div>
-
         {/* ── Report Button ── */}
         {canGenerate ? (
           <button onClick={() => setShowReport(true)} style={{ width:"100%", background:"linear-gradient(135deg,#1d4ed8,#7c3aed)", color:"#fff", border:"none", borderRadius:14, padding:"16px 32px", fontSize:15, fontWeight:800, cursor:"pointer", letterSpacing:"0.02em", boxShadow:"0 8px 32px #1d4ed855" }}>
@@ -1897,7 +1806,7 @@ export default function App() {
           </button>
         ) : (
           <div style={{ background:"#1e293b", border:"2px dashed #334155", borderRadius:14, padding:"16px 20px", textAlign:"center", fontSize:13, color:"#475569", fontWeight:700 }}>
-            🔒 Complete all 9 steps to unlock the report
+            🔒 Complete all 4 steps to unlock the report
             <div style={{ fontSize:11, color:"#374151", marginTop:5, fontWeight:400, lineHeight:1.7 }}>
               {!infoValid        && "• Fill in all customer & vehicle fields — check for spelling errors in Make/Model   "}
               {!allVehiclePhotos && "• Upload all 4 vehicle angle photos   "}
