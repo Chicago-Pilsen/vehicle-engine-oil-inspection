@@ -136,26 +136,14 @@ const OIL_SPECS_DB = {
   "ford_escape":        { oil:"5W-20 Full Synthetic", capacity:"4.5 qt", filter:"Motorcraft FL-400S", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan","Funnel"] },
   "ford_ranger":        { oil:"5W-30 Full Synthetic", capacity:"5.0 qt", filter:"Motorcraft FL-500S", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Ramps"] },
   // Chevrolet
-  "chevrolet_silverado":{ oil:"0W-20 Full Synthetic (dexos1 Gen3)", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm drain plug socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
-  "chevrolet_equinox":  { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
-  "chevrolet_malibu":   { oil:"0W-20 Full Synthetic (dexos1)", capacity:"4.2 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan","Funnel"] },
-  "chevrolet_tahoe":    { oil:"0W-20 Full Synthetic (dexos1 Gen3)", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
-  "chevrolet_camaro":   { oil:"0W-20 Full Synthetic (dexos1)", capacity:"6.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Jack stands"] },
-  "chevrolet_colorado": { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Ramps"] },
-  "chevrolet_traverse": { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.3 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
-  "chevrolet_suburban": { oil:"0W-20 Full Synthetic (dexos1 Gen3)", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
+  "chevrolet_silverado":{ oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm drain plug socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
+  "chevrolet_equinox":  { oil:"5W-30 Full Synthetic", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
+  "chevrolet_malibu":   { oil:"5W-30 Full Synthetic", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan","Funnel"] },
+  "chevrolet_tahoe":    { oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
+  "chevrolet_camaro":   { oil:"5W-30 Full Synthetic", capacity:"6.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (7+ qt)","Funnel","Jack stands"] },
   // GMC
-  "gmc_sierra":         { oil:"0W-20 Full Synthetic (dexos1 Gen3)", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
-  "gmc_yukon":          { oil:"0W-20 Full Synthetic (dexos1 Gen3)", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Ramps or jack stands"] },
-  "gmc_terrain":        { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
-  "gmc_canyon":         { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Ramps"] },
-  "gmc_acadia":         { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.3 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
-  // Buick
-  "buick_enclave":      { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.3 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
-  "buick_encore":       { oil:"0W-20 Full Synthetic (dexos1)", capacity:"4.2 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan","Funnel"] },
-  // Cadillac
-  "cadillac_escalade":  { oil:"0W-20 Full Synthetic (dexos1 Gen3)", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
-  "cadillac_xt5":       { oil:"0W-20 Full Synthetic (dexos1)", capacity:"5.3 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (6+ qt)","Funnel","Jack stands"] },
+  "gmc_sierra":         { oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Torque wrench","Ramps"] },
+  "gmc_yukon":          { oil:"5W-30 Full Synthetic", capacity:"8.0 qt", filter:"AC Delco PF63E", drain:"15mm", tools:["15mm socket","Oil filter wrench","Drain pan (9+ qt)","Funnel","Ramps or jack stands"] },
   // Nissan
   "nissan_altima":      { oil:"5W-30 Full Synthetic", capacity:"4.9 qt", filter:"Nissan 15208-9E01A", drain:"14mm", tools:["14mm drain plug socket","Oil filter wrench","Drain pan (5+ qt)","Funnel","Jack stands"] },
   "nissan_rogue":       { oil:"0W-20 Full Synthetic", capacity:"4.4 qt", filter:"Nissan 15208-9E01A", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel"] },
@@ -322,10 +310,7 @@ function VehicleSpecsCard({ vinData, make, model }) {
         </div>
       )}
 
-      {/* Disclaimer */}
-      <div style={{ fontSize:10, color:"#f97316", background:"#1c1107", borderRadius:8, padding:"8px 12px", marginBottom:14, lineHeight:1.6, border:"1px solid #7c3209" }}>
-        ⚠️ <strong>Always verify oil type and capacity in the owner's manual or on the oil fill cap.</strong> Specs shown are general estimates and may vary by engine size, model year, and trim level.
-      </div>
+      {/* Tools Needed */}
       <div>
         <div style={{ fontSize:10, fontWeight:700, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
           🔧 Tools Needed for Oil Change
