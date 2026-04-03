@@ -468,82 +468,6 @@ function PhotoTile({ label, icon, desc, photo, onCapture, required=true, compact
   );
 }
 
-// ─── Before / After Photo Pair ────────────────────────────────────────────────
-function BeforeAfterPair({ label, icon, desc, before, after, onBefore, onAfter }) {
-  const beforeRef = useRef();
-  const afterRef  = useRef();
-
-  const openPicker = (ref, onCapture) => {
-    const input = ref.current;
-    input.value = "";
-    const handler = e => {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => onCapture(ev.target.result);
-      reader.readAsDataURL(file);
-      input.removeEventListener("change", handler);
-    };
-    input.addEventListener("change", handler);
-    input.click();
-  };
-
-  const Slot = ({ photo, slotLabel, color, onCapture, inputRef }) => (
-    <div style={{ flex:1, minWidth:0 }}>
-      <div style={{ fontSize:9, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.09em", color, marginBottom:5, textAlign:"center" }}>
-        {slotLabel}
-      </div>
-      <div
-        onClick={() => openPicker(inputRef, onCapture)}
-        style={{
-          cursor:"pointer", borderRadius:10,
-          border:`2px solid ${photo ? color : "#334155"}`,
-          background:"#0f172a",
-          height:130, position:"relative", overflow:"hidden",
-          display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-          transition:"all 0.2s",
-        }}
-      >
-        {photo ? (
-          <>
-            <img src={photo} alt={slotLabel} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
-            <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"16px 8px 6px", background:"linear-gradient(transparent,#000d)", textAlign:"center" }}>
-              <span style={{ fontSize:9, color, fontWeight:800 }}>✓ tap to retake</span>
-            </div>
-          </>
-        ) : (
-          <div style={{ textAlign:"center", padding:8 }}>
-            <div style={{ fontSize:22, marginBottom:4 }}>{icon}</div>
-            <div style={{ fontSize:10, color:"#94a3b8", fontWeight:600 }}>📷 {slotLabel}</div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{
-      background:"#1e293b", borderRadius:12, padding:"14px 16px",
-      border:`1.5px solid ${before&&after?"#22c55e":"#334155"}`, transition:"border 0.3s",
-    }}>
-      <input ref={beforeRef} type="file" accept="image/*" capture="environment" style={{ display:"none" }}/>
-      <input ref={afterRef}  type="file" accept="image/*" capture="environment" style={{ display:"none" }}/>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-        <span style={{ fontSize:16 }}>{icon}</span>
-        <div>
-          <div style={{ fontWeight:700, fontSize:13, color:"#f1f5f9" }}>{label}</div>
-          {desc && <div style={{ fontSize:10, color:"#64748b" }}>{desc}</div>}
-        </div>
-        {before && after && <span style={{ marginLeft:"auto", fontSize:10, color:"#22c55e", fontWeight:700 }}>✓ Complete</span>}
-      </div>
-      <div style={{ display:"flex", gap:8, alignItems:"stretch" }}>
-        <Slot photo={before} slotLabel="BEFORE" color="#f97316" onCapture={onBefore} inputRef={beforeRef}/>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:"#475569", flexShrink:0 }}>→</div>
-        <Slot photo={after}  slotLabel="AFTER"  color="#22c55e" onCapture={onAfter}  inputRef={afterRef}/>
-      </div>
-    </div>
-  );
-}
-
 // ─── REALISTIC Dipstick Gauge ─────────────────────────────────────────────────
 function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelChange, onColorChange }) {
   const fillColor = colors[colorIdx] || colors[0];
@@ -1127,35 +1051,14 @@ function PrintModal({ info, miles, fluidStates, onClose }) {
   const handlePrint = () => {
     const win = window.open("","_blank");
 
-    // Build before/after photo HTML helper
-    const baPhotos = info._baPhotos || {};
-    const baSection = (title, pairs) => {
-      const hasAny = pairs.some(([,bk,ak]) => baPhotos[bk] || baPhotos[ak]);
-      if (!hasAny) return "";
-      return `<div class="section">
-  <div class="section-title">${title}</div>
-  <div class="ba-grid">
-    ${pairs.map(([label, bk, ak]) => {
-      const b = baPhotos[bk], a = baPhotos[ak];
-      if (!b && !a) return "";
-      return `<div class="ba-pair">
-        <div class="ba-label">${label}</div>
-        <div class="ba-row">
-          <div class="ba-slot">
-            <div class="ba-slot-label before-label">BEFORE</div>
-            ${b ? `<img src="${b}" class="ba-img"/>` : `<div class="ba-empty">No photo</div>`}
-          </div>
-          <div class="ba-arrow">→</div>
-          <div class="ba-slot">
-            <div class="ba-slot-label after-label">AFTER</div>
-            ${a ? `<img src="${a}" class="ba-img"/>` : `<div class="ba-empty">No photo</div>`}
-          </div>
-        </div>
+    // Build vehicle photo thumbnails HTML
+    const vehiclePhotoHTML = Object.entries(info._vehiclePhotos||{}).map(([id,src])=>{
+      const angle = VEHICLE_ANGLES.find(a=>a.id===id);
+      return `<div class="photo-cell">
+        <img src="${src}" alt="${angle?.label||id}"/>
+        <div class="photo-label">${angle?.icon||""} ${angle?.label||id}</div>
       </div>`;
-    }).join("")}
-  </div>
-</div>`;
-    };
+    }).join("");
 
     const wheelPhotoHTML = Object.entries(info._wheelPhotos||{}).map(([id,src])=>{
       const wheel = WHEEL_SPOTS.find(w=>w.id===id);
@@ -1218,18 +1121,7 @@ function PrintModal({ info, miles, fluidStates, onClose }) {
   .photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   .photo-cell img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;display:block}
   .photo-cell .photo-label{font-size:9px;color:#64748b;text-align:center;margin-top:4px;font-weight:700}
-  /* BEFORE / AFTER */
-  .ba-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-  .ba-pair{background:#f8fafc;border-radius:10px;padding:12px}
-  .ba-label{font-size:10px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-  .ba-row{display:flex;align-items:center;gap:8px}
-  .ba-slot{flex:1;min-width:0}
-  .ba-slot-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-align:center;margin-bottom:3px}
-  .before-label{color:#f97316}
-  .after-label{color:#16a34a}
-  .ba-img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;display:block}
-  .ba-empty{width:100%;aspect-ratio:4/3;background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#94a3b8}
-  .ba-arrow{font-size:16px;color:#94a3b8;flex-shrink:0}
+  .no-photo{background:#f1f5f9;border:1px dashed #cbd5e1;border-radius:6px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#94a3b8}
   /* TECH NOTES */
   .notes-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;font-size:12px;color:#334155;line-height:1.6;min-height:48px}
   /* SIGNATURE */
@@ -1329,30 +1221,25 @@ ${rows.map(r => r.checks.length > 0 ? `
 </div>` : "").join("")}
 
 <!-- 360° VEHICLE PHOTOS -->
-${baSection("⬆️⬇️⬅️➡️ 360° Vehicle Inspection — Before &amp; After", [
-  ["Front View",      "exterior_front_before",  "exterior_front_after"],
-  ["Rear View",       "exterior_rear_before",   "exterior_rear_after"],
-  ["Driver Side",     "exterior_left_before",   "exterior_left_after"],
-  ["Passenger Side",  "exterior_right_before",  "exterior_right_after"],
-])}
-${baSection("🔵 Wheel &amp; Tire — Before &amp; After", [
-  ["Front Left Wheel",  "wheel_fl_before", "wheel_fl_after"],
-  ["Front Right Wheel", "wheel_fr_before", "wheel_fr_after"],
-  ["Rear Left Wheel",   "wheel_rl_before", "wheel_rl_after"],
-  ["Rear Right Wheel",  "wheel_rr_before", "wheel_rr_after"],
-])}
-${baSection("🛢️ Oil Dipstick &amp; Dashboard — Before &amp; After", [
-  ["Oil Dipstick",        "dipstick_before",  "dipstick_after"],
-  ["Dashboard / Cluster", "dashboard_before", "dashboard_after"],
-])}
-${baSection("🔩 Oil Filter &amp; Drain Plug — Before &amp; After", [
-  ["Oil Filter",  "oilFilter_before",  "oilFilter_after"],
-  ["Drain Plug",  "drainPlug_before",  "drainPlug_after"],
-])}
-${baSection("💨 Air Filters — Before &amp; After", [
-  ["Engine Air Filter", "airFilter_before",   "airFilter_after"],
-  ["Cabin Air Filter",  "cabinFilter_before", "cabinFilter_after"],
-])}
+${vehiclePhotoHTML ? `
+<div class="section">
+  <div class="section-title">📸 360° Vehicle Documentation</div>
+  <div class="photo-grid">${vehiclePhotoHTML}</div>
+</div>` : ""}
+
+<!-- WHEEL & TIRE PHOTOS -->
+${wheelPhotoHTML ? `
+<div class="section">
+  <div class="section-title">🔵 Wheel &amp; Tire Documentation</div>
+  <div class="photo-grid">${wheelPhotoHTML}</div>
+</div>` : ""}
+
+<!-- OIL / DIPSTICK PHOTOS -->
+${fluidPhotoHTML ? `
+<div class="section">
+  <div class="section-title">🛢️ Oil / Dipstick Photo Evidence</div>
+  <div class="photo-grid">${fluidPhotoHTML}</div>
+</div>` : ""}
 
 <!-- SIGNATURE BLOCK -->
 <div class="section">
@@ -1486,10 +1373,6 @@ export default function App() {
   const [vehiclePhotos, setVehiclePhotos] = useState({});
   const [wheelPhotos, setWheelPhotos] = useState({});
   const [fluidPhotos, setFluidPhotos] = useState({});
-
-  // ── Before / After photo groups ──
-  const [baPhotos, setBaPhotos] = useState({});
-  const setBA = (key, val) => setBaPhotos(p => ({ ...p, [key]:val }));
   const [vinLoading, setVinLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [fluidStates, setFluidStates] = useState(
@@ -1550,8 +1433,8 @@ export default function App() {
   };
 
   // ── Completeness ──
-  const allVehiclePhotos = ["exterior_front","exterior_rear","exterior_left","exterior_right"].every(k => baPhotos[k+"_before"] && baPhotos[k+"_after"]);
-  const allWheelPhotos   = ["wheel_fl","wheel_fr","wheel_rl","wheel_rr"].every(k => baPhotos[k+"_before"] && baPhotos[k+"_after"]);
+  const allVehiclePhotos = VEHICLE_ANGLES.every(a => vehiclePhotos[a.id]);
+  const allWheelPhotos   = WHEEL_SPOTS.every(w => wheelPhotos[w.id]);
   const allFluidPhotos   = FLUIDS.filter(f => fluidStates[f.id]?.toggled).every(f => fluidPhotos[f.id]);
   const infoValid = isValidName(info.custName) && isValidPhone(info.custPhone) &&
     isValidEmail(info.custEmail) && isValidAddress(info.custAddress) &&
@@ -1666,47 +1549,27 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── STEP 2: 360° Vehicle — Before & After ── */}
+        {/* ── STEP 2: 360° Vehicle Photos ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${allVehiclePhotos?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={2} title="360° Vehicle — Before & After" complete={allVehiclePhotos}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Capture all four sides before and after service — required for liability protection.
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
-            <BeforeAfterPair label="Front View" icon="⬆️" desc="Straight-on front"
-              before={baPhotos.exterior_front_before} after={baPhotos.exterior_front_after}
-              onBefore={v=>setBA("exterior_front_before",v)} onAfter={v=>setBA("exterior_front_after",v)}/>
-            <BeforeAfterPair label="Rear View" icon="⬇️" desc="Straight-on rear"
-              before={baPhotos.exterior_rear_before} after={baPhotos.exterior_rear_after}
-              onBefore={v=>setBA("exterior_rear_before",v)} onAfter={v=>setBA("exterior_rear_after",v)}/>
-            <BeforeAfterPair label="Driver Side" icon="⬅️" desc="Full left profile"
-              before={baPhotos.exterior_left_before} after={baPhotos.exterior_left_after}
-              onBefore={v=>setBA("exterior_left_before",v)} onAfter={v=>setBA("exterior_left_after",v)}/>
-            <BeforeAfterPair label="Passenger Side" icon="➡️" desc="Full right profile"
-              before={baPhotos.exterior_right_before} after={baPhotos.exterior_right_after}
-              onBefore={v=>setBA("exterior_right_before",v)} onAfter={v=>setBA("exterior_right_after",v)}/>
+          <SectionHeader step={2} title="360° Vehicle Documentation" complete={allVehiclePhotos}/>
+          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>Required for liability protection. Capture all four sides before service begins.</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+            {VEHICLE_ANGLES.map(a => (
+              <PhotoTile key={a.id} label={a.label} icon={a.icon} desc={a.desc}
+                photo={vehiclePhotos[a.id]} onCapture={p=>setVehiclePhotos(v=>({...v,[a.id]:p}))}/>
+            ))}
           </div>
         </div>
 
-        {/* ── STEP 3: Wheel & Tire — Before & After ── */}
+        {/* ── STEP 3: Wheel Photos ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${allWheelPhotos?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={3} title="Wheel & Tire — Before & After" complete={allWheelPhotos}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Document all four wheels before and after — tire tread, condition, and visible damage.
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
-            <BeforeAfterPair label="Front Left Wheel" icon="↖️" desc="Tread + sidewall"
-              before={baPhotos.wheel_fl_before} after={baPhotos.wheel_fl_after}
-              onBefore={v=>setBA("wheel_fl_before",v)} onAfter={v=>setBA("wheel_fl_after",v)}/>
-            <BeforeAfterPair label="Front Right Wheel" icon="↗️" desc="Tread + sidewall"
-              before={baPhotos.wheel_fr_before} after={baPhotos.wheel_fr_after}
-              onBefore={v=>setBA("wheel_fr_before",v)} onAfter={v=>setBA("wheel_fr_after",v)}/>
-            <BeforeAfterPair label="Rear Left Wheel" icon="↙️" desc="Tread + sidewall"
-              before={baPhotos.wheel_rl_before} after={baPhotos.wheel_rl_after}
-              onBefore={v=>setBA("wheel_rl_before",v)} onAfter={v=>setBA("wheel_rl_after",v)}/>
-            <BeforeAfterPair label="Rear Right Wheel" icon="↘️" desc="Tread + sidewall"
-              before={baPhotos.wheel_rr_before} after={baPhotos.wheel_rr_after}
-              onBefore={v=>setBA("wheel_rr_before",v)} onAfter={v=>setBA("wheel_rr_after",v)}/>
+          <SectionHeader step={3} title="Wheel & Tire Documentation" complete={allWheelPhotos}/>
+          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>Document all four wheels — tire condition, tread depth, and visible damage.</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+            {WHEEL_SPOTS.map(w => (
+              <PhotoTile key={w.id} label={w.label} icon={w.icon} desc="Full wheel + tire"
+                photo={wheelPhotos[w.id]} onCapture={p=>setWheelPhotos(v=>({...v,[w.id]:p}))}/>
+            ))}
           </div>
         </div>
 
@@ -1751,54 +1614,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── STEP 5: Dipstick & Dashboard — Before & After ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:"1.5px solid #334155" }}>
-          <SectionHeader step={5} title="Dipstick & Dashboard — Before & After" complete={!!(baPhotos.dipstick_before&&baPhotos.dipstick_after&&baPhotos.dashboard_before&&baPhotos.dashboard_after)}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Capture the dipstick and dashboard/cluster before and after the oil change.
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
-            <BeforeAfterPair label="Oil Dipstick" icon="🛢️" desc="Close-up of dipstick tip showing oil level & color"
-              before={baPhotos.dipstick_before} after={baPhotos.dipstick_after}
-              onBefore={v=>setBA("dipstick_before",v)} onAfter={v=>setBA("dipstick_after",v)}/>
-            <BeforeAfterPair label="Dashboard / Cluster" icon="🖥️" desc="Oil life indicator, mileage, warning lights"
-              before={baPhotos.dashboard_before} after={baPhotos.dashboard_after}
-              onBefore={v=>setBA("dashboard_before",v)} onAfter={v=>setBA("dashboard_after",v)}/>
-          </div>
-        </div>
-
-        {/* ── STEP 6: Oil Filter & Drain Plug — Before & After ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:"1.5px solid #334155" }}>
-          <SectionHeader step={6} title="Oil Filter & Drain Plug — Before & After" complete={!!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after)}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Document the old and new oil filter and drain plug condition.
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
-            <BeforeAfterPair label="Oil Filter" icon="🔩" desc="Old filter vs new filter installed"
-              before={baPhotos.oilFilter_before} after={baPhotos.oilFilter_after}
-              onBefore={v=>setBA("oilFilter_before",v)} onAfter={v=>setBA("oilFilter_after",v)}/>
-            <BeforeAfterPair label="Drain Plug" icon="🔧" desc="Drain plug area before drain & after reinstall"
-              before={baPhotos.drainPlug_before} after={baPhotos.drainPlug_after}
-              onBefore={v=>setBA("drainPlug_before",v)} onAfter={v=>setBA("drainPlug_after",v)}/>
-          </div>
-        </div>
-
-        {/* ── STEP 7: Air Filters — Before & After ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:"1.5px solid #334155" }}>
-          <SectionHeader step={7} title="Air Filters — Before & After" complete={!!(baPhotos.airFilter_before&&baPhotos.airFilter_after&&baPhotos.cabinFilter_before&&baPhotos.cabinFilter_after)}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
-            Document engine air filter and cabin air filter condition before and after inspection or replacement.
-          </p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
-            <BeforeAfterPair label="Engine Air Filter" icon="💨" desc="Air filter condition — dirt, debris, color"
-              before={baPhotos.airFilter_before} after={baPhotos.airFilter_after}
-              onBefore={v=>setBA("airFilter_before",v)} onAfter={v=>setBA("airFilter_after",v)}/>
-            <BeforeAfterPair label="Cabin Air Filter" icon="🌬️" desc="Cabin filter condition — dust, debris, odor source"
-              before={baPhotos.cabinFilter_before} after={baPhotos.cabinFilter_after}
-              onBefore={v=>setBA("cabinFilter_before",v)} onAfter={v=>setBA("cabinFilter_after",v)}/>
-          </div>
-        </div>
-
         {/* ── Report Button ── */}
         {canGenerate ? (
           <button onClick={() => setShowReport(true)} style={{ width:"100%", background:"linear-gradient(135deg,#1d4ed8,#7c3aed)", color:"#fff", border:"none", borderRadius:14, padding:"16px 32px", fontSize:15, fontWeight:800, cursor:"pointer", letterSpacing:"0.02em", boxShadow:"0 8px 32px #1d4ed855" }}>
@@ -1819,7 +1634,7 @@ export default function App() {
         <div style={{ height:40 }}/>
       </div>
 
-      {showReport && <PrintModal info={{...info, _vehiclePhotos:vehiclePhotos, _wheelPhotos:wheelPhotos, _fluidPhotos:fluidPhotos, _baPhotos:baPhotos}} miles={miles} fluidStates={fluidStates} onClose={()=>setShowReport(false)}/>}
+      {showReport && <PrintModal info={{...info, _vehiclePhotos:vehiclePhotos, _wheelPhotos:wheelPhotos, _fluidPhotos:fluidPhotos}} miles={miles} fluidStates={fluidStates} onClose={()=>setShowReport(false)}/>}
     </div>
   );
 }
