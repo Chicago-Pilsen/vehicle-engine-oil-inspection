@@ -175,38 +175,18 @@ const OIL_SPECS_DB = {
   "kia_sportage":       { oil:"5W-20 Full Synthetic", capacity:"4.8 qt", filter:"Kia 26300-35504", drain:"14mm", tools:["14mm socket","Oil filter wrench","Drain pan","Funnel","Jack stands"] },
 };
 
-// GM brands — always require 15mm socket for drain plug
-const GM_BRANDS = ["chevrolet","gmc","buick","cadillac","pontiac","saturn","oldsmobile"];
-
 // Look up specs by make + model (fuzzy match)
 function getOilSpecs(make, model) {
   if (!make || !model) return null;
-  const makeLower  = make.toLowerCase();
-  const key = `${makeLower}_${model.toLowerCase()}`;
-
-  // Find matching spec entry
-  let specs = OIL_SPECS_DB[key] || null;
-  if (!specs) {
-    const found = Object.entries(OIL_SPECS_DB).find(([k]) => {
-      return key.startsWith(k) || k.startsWith(key) ||
-        key.includes(k.split("_")[1]) && key.startsWith(k.split("_")[0]);
-    });
-    specs = found ? found[1] : null;
-  }
-
-  // For any GM brand — guarantee 15mm socket is in tools list
-  if (GM_BRANDS.includes(makeLower)) {
-    const base = specs || { oil:"5W-30 Full Synthetic", capacity:"See owner's manual", filter:"AC Delco (see manual)", drain:"15mm", tools:[] };
-    const tools = base.tools || [];
-    // Insert 15mm socket at the front if not already present
-    const has15mm = tools.some(t => t.toLowerCase().includes("15mm"));
-    return {
-      ...base,
-      tools: has15mm ? tools : ["15mm drain plug socket — required for all GM vehicles", ...tools],
-    };
-  }
-
-  return specs;
+  const key = `${make.toLowerCase()}_${model.toLowerCase()}`;
+  // Exact match
+  if (OIL_SPECS_DB[key]) return OIL_SPECS_DB[key];
+  // Partial match — check if key starts with any db key or vice versa
+  const found = Object.entries(OIL_SPECS_DB).find(([k]) => {
+    return key.startsWith(k) || k.startsWith(key) ||
+      key.includes(k.split("_")[1]) && key.startsWith(k.split("_")[0]);
+  });
+  return found ? found[1] : null;
 }
 
 // Common tools needed for ANY oil change
