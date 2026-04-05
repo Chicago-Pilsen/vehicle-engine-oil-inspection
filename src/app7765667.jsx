@@ -1089,6 +1089,12 @@ function FluidCard({ fluid, miles, state, onUpdate, photoUploaded }) {
 
       {state.toggled && (
         <>
+          {/* Photo warning */}
+          {!photoUploaded && (
+            <div style={{ background:"#1c1917", border:"1.5px dashed #78350f", borderRadius:10, padding:"8px 12px", marginBottom:10, fontSize:11, color:"#fbbf24", fontWeight:600 }}>
+              📸 Upload a photo of this fluid to complete inspection
+            </div>
+          )}
           {/* Already serviced toggle */}
           <div style={{ marginBottom:10 }}>
             <Toggle checked={state.alreadyDone} onChange={v=>onUpdate({alreadyDone:v})}
