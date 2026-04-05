@@ -1113,6 +1113,8 @@ const NOTIFICATION_ITEMS = [
   { id:"oilChange",     label:"Oil & Filter Change",          priority:"now",  icon:"🛢️" },
   { id:"gaskLeak",      label:"Gasket / Seal Leak Repair",    priority:"now",  icon:"🔧" },
   { id:"pcvReplace",    label:"PCV Valve Replacement",        priority:"soon", icon:"🌬️" },
+  { id:"oilFlush",      label:"Engine Oil Flush",             priority:"now",  icon:"🔄" },
+  { id:"oilSample",     label:"Send Oil Sample to Lab",       priority:"soon", icon:"🧪" },
   { id:"monitorConsump",label:"Monitor Oil Consumption",      priority:"watch",icon:"📉" },
   { id:"monitorLeak",   label:"Monitor Leak — Check Next Svc",priority:"watch",icon:"💧" },
   { id:"engineInspect", label:"Full Engine Inspection",       priority:"now",  icon:"🔩" },
