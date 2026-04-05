@@ -1681,7 +1681,6 @@ ${(serviceHistory && Object.keys(serviceHistory).some(k=>serviceHistory[k])) ? `
     ${serviceHistory.lastOilViscosity? `<div class="kv"><label>Last Oil Viscosity</label><span>${serviceHistory.lastOilViscosity}</span></div>` : ""}
     ${serviceHistory.nextChangeDate  ? `<div class="kv"><label>Next Change Date</label><span>${serviceHistory.nextChangeDate}</span></div>` : ""}
     ${serviceHistory.nextChangeMiles ? `<div class="kv"><label>Next Change Mileage</label><span>${serviceHistory.nextChangeMiles}</span></div>` : ""}
-    <div class="kv"><label>Recommended Next Change</label><span style="color:#16a34a;font-weight:700">${nextOilChangeMiles ? nextOilChangeMiles.toLocaleString() + " mi" : "—"} · ${nextOilChangeDate}</span></div>
   </div>
 </div>` : ""}
 
@@ -1945,32 +1944,15 @@ export default function App() {
     setVinLoading(false);
   };
 
-  // ── Completeness — every section must be green ──
+  // ── Completeness ──
   const allVehiclePhotos = ["exterior_front","exterior_rear","exterior_left","exterior_right"].every(k => baPhotos[k+"_before"] && baPhotos[k+"_after"]);
-  const allFluidPhotos   = true;
+  const allWheelPhotos   = ["wheel_fl","wheel_fr","wheel_rl","wheel_rr"].every(k => baPhotos[k+"_before"] && baPhotos[k+"_after"]);
+  const allFluidPhotos = true; // Photo upload removed from oil inspection step
   const infoValid = isValidName(info.custName) && isValidPhone(info.custPhone) &&
     isValidEmail(info.custEmail) && isValidAddress(info.custAddress) &&
     isValidYear(info.year) && isValidMake(info.make) && isValidModel(info.model) &&
     isValidVin(info.vin) && isValidText(info.techName) && isValidMiles(miles);
-
-  // Oil inspection — require overall status to be set
-  const oilInspectionDone = FLUIDS.every(f => {
-    const s = fluidStates[f.id];
-    return s?.alreadyDone || (s?.status && s.status !== "");
-  });
-
-  const step5Done = !!(baPhotos.dipstick_before&&baPhotos.dipstick_after&&baPhotos.dashboard_before&&baPhotos.dashboard_after);
-  const step6Done = !!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after);
-  const step7Done = !!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after);
-  const step8Done = !!(baPhotos.oilLeak_before&&baPhotos.oilLeak_after);
-
-  // Next oil change calculation based on current miles
-  const nextOilChangeMiles = isValidMiles(miles) ? parseInt(miles) + 5000 : null;
-  const nextOilChangeDate  = (() => {
-    const d = new Date(); d.setMonth(d.getMonth() + 3); return d.toLocaleDateString("en-US",{month:"long",year:"numeric"});
-  })();
-
-  const canGenerate = infoValid && allVehiclePhotos && oilInspectionDone && step5Done && step6Done && step7Done && step8Done;
+  const canGenerate = infoValid && allVehiclePhotos && allWheelPhotos && allFluidPhotos;
 
   const highPri = isValidMiles(miles) ? FLUIDS.filter(f => {
     const r = mileRec(f, miles); return r?.status==="overdue" || r?.status==="soon";
@@ -1992,16 +1974,17 @@ export default function App() {
           {[
             { l:"Customer Info",    d:infoValid },
             { l:"360° Photos",      d:allVehiclePhotos },
-            { l:"Oil Inspection",   d:oilInspectionDone },
-            { l:"Dipstick & Dash",  d:step5Done },
-            { l:"Filter & Plug",    d:step6Done },
-            { l:"Engine Bay",       d:step7Done },
-            { l:"Oil Leak",         d:step8Done },
+            { l:"Wheel Photos",     d:allWheelPhotos },
+            { l:"Oil Inspection",   d:allFluidPhotos },
+            { l:"Dipstick & Dash",  d:!!(baPhotos.dipstick_before&&baPhotos.dipstick_after&&baPhotos.dashboard_before&&baPhotos.dashboard_after) },
+            { l:"Filter & Plug",    d:!!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after) },
+            { l:"Engine Bay",       d:!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after) },
+            { l:"Oil Leak",         d:!!(baPhotos.oilLeak_before&&baPhotos.oilLeak_after) },
           ].map((s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <div style={{ width:20, height:20, borderRadius:"50%", background:s.d?"#166534":"#334155", border:`2px solid ${s.d?"#22c55e":"#475569"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:s.d?"#bbf7d0":"#64748b", flexShrink:0, fontWeight:800 }}>{s.d?"✓":i+1}</div>
               <span style={{ fontSize:11, color:s.d?"#bbf7d0":"#64748b", fontWeight:s.d?700:400 }}>{s.l}</span>
-              {i < 6 && <span style={{ color:"#334155", margin:"0 2px", fontSize:14 }}>›</span>}
+              {i < 3 && <span style={{ color:"#334155", margin:"0 2px", fontSize:14 }}>›</span>}
             </div>
           ))}
         </div>
@@ -2104,27 +2087,29 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── STEP 3: Engine Oil Inspection ── */}
-        {/* Next oil change recommendation banner */}
-        {nextOilChangeMiles && (
-          <div style={{ background:"linear-gradient(135deg,#0a2040,#0f2a14)", border:"1.5px solid #1d4ed8", borderRadius:14, padding:"14px 18px", marginBottom:16 }}>
-            <div style={{ fontWeight:800, color:"#bfdbfe", fontSize:13, marginBottom:6 }}>📅 Next Oil Change Recommendation</div>
-            <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
-              <div>
-                <div style={{ fontSize:9, color:"#64748b", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.07em" }}>Due at Mileage</div>
-                <div style={{ fontSize:20, fontWeight:900, color:"#22c55e" }}>{nextOilChangeMiles.toLocaleString()} mi</div>
-              </div>
-              <div>
-                <div style={{ fontSize:9, color:"#64748b", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.07em" }}>Approx. Date</div>
-                <div style={{ fontSize:16, fontWeight:700, color:"#60a5fa" }}>{nextOilChangeDate}</div>
-              </div>
-              <div style={{ flex:1, minWidth:180 }}>
-                <div style={{ fontSize:9, color:"#64748b", textTransform:"uppercase", fontWeight:700, letterSpacing:"0.07em" }}>Based On</div>
-                <div style={{ fontSize:11, color:"#94a3b8", lineHeight:1.5 }}>Current mileage ({parseInt(miles).toLocaleString()} mi) + standard 5,000 mi interval. Adjust per manufacturer spec.</div>
-              </div>
-            </div>
+        {/* ── STEP 3: Wheel & Tire — Before & After ── */}
+        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${allWheelPhotos?"#22c55e":"#334155"}` }}>
+          <SectionHeader step={3} title="Wheel & Tire — Before & After" complete={allWheelPhotos}/>
+          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
+            Document all four wheels before and after — tire tread, condition, and visible damage.
+          </p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
+            <BeforeAfterPair label="Front Left Wheel" icon="↖️" desc="Tread + sidewall"
+              before={baPhotos.wheel_fl_before} after={baPhotos.wheel_fl_after}
+              onBefore={v=>setBA("wheel_fl_before",v)} onAfter={v=>setBA("wheel_fl_after",v)}/>
+            <BeforeAfterPair label="Front Right Wheel" icon="↗️" desc="Tread + sidewall"
+              before={baPhotos.wheel_fr_before} after={baPhotos.wheel_fr_after}
+              onBefore={v=>setBA("wheel_fr_before",v)} onAfter={v=>setBA("wheel_fr_after",v)}/>
+            <BeforeAfterPair label="Rear Left Wheel" icon="↙️" desc="Tread + sidewall"
+              before={baPhotos.wheel_rl_before} after={baPhotos.wheel_rl_after}
+              onBefore={v=>setBA("wheel_rl_before",v)} onAfter={v=>setBA("wheel_rl_after",v)}/>
+            <BeforeAfterPair label="Rear Right Wheel" icon="↘️" desc="Tread + sidewall"
+              before={baPhotos.wheel_rr_before} after={baPhotos.wheel_rr_after}
+              onBefore={v=>setBA("wheel_rr_before",v)} onAfter={v=>setBA("wheel_rr_after",v)}/>
           </div>
-        )}
+        </div>
+
+        {/* ── Mile alert ── */}
         {highPri.length > 0 && isValidMiles(miles) && (
           <div style={{ background:"linear-gradient(135deg,#7c1a1a,#431407)", border:"1.5px solid #ef4444", borderRadius:14, padding:"12px 18px", marginBottom:16 }}>
             <div style={{ fontWeight:800, color:"#fca5a5", fontSize:13, marginBottom:6 }}>🚨 Mile-Based Alerts — {parseInt(miles).toLocaleString()} mi</div>
@@ -2137,10 +2122,10 @@ export default function App() {
           </div>
         )}
 
-        {/* ── STEP 3: Engine Oil Inspection ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${oilInspectionDone?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={3} title="Engine Oil Inspection" complete={oilInspectionDone}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>Complete all inspection checks below. Set a status (Pass / Monitor / Service Now) to mark complete.</p>
+        {/* ── STEP 4: Fluid Inspection ── */}
+        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${allFluidPhotos?"#22c55e":"#334155"}` }}>
+          <SectionHeader step={4} title="Engine Oil Inspection" complete={allFluidPhotos}/>
+          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>Complete all inspection checks below.</p>
 
           {/* Fluid cards */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:16, alignItems:"start" }}>
@@ -2180,9 +2165,9 @@ export default function App() {
             costs={notifCosts} onCostChange={setNotifCost}/>
         </div>
 
-        {/* ── STEP 4: Dipstick & Dashboard — Before & After ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${step5Done?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={4} title="Dipstick & Dashboard — Before & After" complete={step5Done}/>
+        {/* ── STEP 5: Dipstick & Dashboard — Before & After ── */}
+        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:"1.5px solid #334155" }}>
+          <SectionHeader step={5} title="Dipstick & Dashboard — Before & After" complete={!!(baPhotos.dipstick_before&&baPhotos.dipstick_after&&baPhotos.dashboard_before&&baPhotos.dashboard_after)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
             Capture the dipstick and dashboard/cluster before and after the oil change.
           </p>
@@ -2196,9 +2181,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── STEP 5: Oil Filter & Drain Plug — Before & After ── */}
-        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${step6Done?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={5} title="Oil Filter & Drain Plug — Before & After" complete={step6Done}/>
+        {/* ── STEP 6: Oil Filter & Drain Plug — Before & After ── */}
+        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:"1.5px solid #334155" }}>
+          <SectionHeader step={6} title="Oil Filter & Drain Plug — Before & After" complete={!!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
             Document the old and new oil filter and drain plug condition.
           </p>
@@ -2213,11 +2198,11 @@ export default function App() {
         </div>
 
 
-        {/* ── STEP 6: Engine Bay & Oil Cap — Before & After ── */}
+        {/* ── STEP 7: Engine Bay & Oil Service Proof ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
           baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after
           ?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={6} title="Engine Bay & Oil Cap — Before & After"
+          <SectionHeader step={7} title="Engine Bay & Oil Cap — Before & After"
             complete={!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
             Document the engine bay and oil cap condition before and after service.
@@ -2236,10 +2221,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── STEP 7: Engine Oil Leak — Before & After ── */}
+        {/* ── STEP 9: Engine Oil Leak — Before & After ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
           baPhotos.oilLeak_before&&baPhotos.oilLeak_after?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={7} title="Engine Oil Leak — Before & After"
+          <SectionHeader step={8} title="Engine Oil Leak — Before & After"
             complete={!!(baPhotos.oilLeak_before&&baPhotos.oilLeak_after)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
             Document any oil leak areas — gaskets, seals, drain plug, oil pan, or undercarriage. Capture before service and after to confirm resolved or note ongoing leaks.
@@ -2256,26 +2241,16 @@ export default function App() {
         {/* ── Report Button ── */}
         {canGenerate ? (
           <button onClick={() => setShowReport(true)} style={{ width:"100%", background:"linear-gradient(135deg,#1d4ed8,#7c3aed)", color:"#fff", border:"none", borderRadius:14, padding:"16px 32px", fontSize:15, fontWeight:800, cursor:"pointer", letterSpacing:"0.02em", boxShadow:"0 8px 32px #1d4ed855" }}>
-            📋 Generate Inspection Report — Print
+            📋 Generate Inspection Report — Print &amp; Email
           </button>
         ) : (
-          <div style={{ background:"#1e293b", border:"2px dashed #334155", borderRadius:14, padding:"16px 20px", textAlign:"center" }}>
-            <div style={{ fontSize:13, color:"#475569", fontWeight:700, marginBottom:8 }}>🔒 Complete all 7 steps to unlock the report</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"flex-start", display:"inline-flex" }}>
-              {[
-                { done:infoValid,          label:"Step 1 — Customer & vehicle info" },
-                { done:allVehiclePhotos,   label:"Step 2 — 360° vehicle photos (before & after)" },
-                { done:oilInspectionDone,  label:"Step 3 — Oil inspection status (Pass/Monitor/Service Now)" },
-                { done:step5Done,          label:"Step 4 — Dipstick & dashboard photos" },
-                { done:step6Done,          label:"Step 5 — Oil filter & drain plug photos" },
-                { done:step7Done,          label:"Step 6 — Engine bay & oil cap photos" },
-                { done:step8Done,          label:"Step 7 — Oil leak photos" },
-              ].map((s,i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:8, fontSize:11 }}>
-                  <span style={{ fontSize:13, color:s.done?"#22c55e":"#ef4444" }}>{s.done?"✓":"✗"}</span>
-                  <span style={{ color:s.done?"#22c55e":"#f87171", fontWeight:s.done?400:600 }}>{s.label}</span>
-                </div>
-              ))}
+          <div style={{ background:"#1e293b", border:"2px dashed #334155", borderRadius:14, padding:"16px 20px", textAlign:"center", fontSize:13, color:"#475569", fontWeight:700 }}>
+            🔒 Complete all 8 steps to unlock the report
+            <div style={{ fontSize:11, color:"#374151", marginTop:5, fontWeight:400, lineHeight:1.7 }}>
+              {!infoValid        && "• Fill in all customer & vehicle fields — check for spelling errors in Make/Model   "}
+              {!allVehiclePhotos && "• Upload all 4 vehicle angle photos   "}
+              {!allWheelPhotos   && "• Upload all 4 wheel photos   "}
+              {!allFluidPhotos   && "• Upload a fluid photo for each inspected fluid"}
             </div>
           </div>
         )}
