@@ -316,7 +316,34 @@ function VehicleSpecsCard({ vinData, make, model }) {
             </div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div style={{ background:"#0a2040", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:11, color:"#64748b" }}>
+          🛢️ Oil specs not in database for this model — check owner's manual or OEM specification sheet
+        </div>
+      )}
+
+      {/* Disclaimer */}
+      <div style={{ fontSize:10, color:"#f97316", background:"#1c1107", borderRadius:8, padding:"8px 12px", marginBottom:14, lineHeight:1.6, border:"1px solid #7c3209" }}>
+        ⚠️ <strong>Always verify oil type and capacity in the owner's manual or on the oil fill cap.</strong> Specs shown are general estimates and may vary by engine size, model year, and trim level.
+      </div>
+      <div>
+        <div style={{ fontSize:10, fontWeight:700, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
+          🔧 Tools Needed for Oil Change
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:5 }}>
+          {allTools.map((tool, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:6, background:"#0f172a", borderRadius:6, padding:"5px 9px" }}>
+              <span style={{ fontSize:10, color:"#3b82f6", flexShrink:0 }}>
+                {i < UNIVERSAL_TOOLS.length ? "🧰" : "🔩"}
+              </span>
+              <span style={{ fontSize:11, color:"#94a3b8" }}>{tool}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize:9, color:"#475569", marginTop:8, lineHeight:1.5 }}>
+          🧰 = universal supplies needed for any oil change &nbsp;·&nbsp; 🔩 = vehicle-specific tools
+        </div>
+      </div>
     </div>
   );
 }
