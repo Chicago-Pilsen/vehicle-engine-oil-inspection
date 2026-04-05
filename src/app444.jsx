@@ -1844,12 +1844,30 @@ ${(notifications && notifications.length > 0) ? `
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [info, setInfo] = useState({
-    custName:"", custPhone:"", custEmail:"", custAddress:"",
-    year:"", make:"", model:"", vin:"", techName:""
+  const [info, setInfo] = useState(() => {
+    const savedVin   = localStorage.getItem("oil_inspection_vin")   || "";
+    const savedMake  = localStorage.getItem("oil_inspection_make")  || "";
+    const savedModel = localStorage.getItem("oil_inspection_model") || "";
+    const savedYear  = localStorage.getItem("oil_inspection_year")  || "";
+    return { custName:"", custPhone:"", custEmail:"", custAddress:"", year:savedYear, make:savedMake, model:savedModel, vin:savedVin, techName:"" };
   });
 
-  const [vinResult, setVinResult] = useState(null);
+  // Restore cached VIN result for specs display on reload
+  const [vinResult, setVinResult] = useState(() => {
+    try {
+      const cached = localStorage.getItem("oil_inspection_vehicle");
+      if (cached) {
+        const d = JSON.parse(cached);
+        // Reconstruct a vinResult-compatible object from cache
+        return { Make: d.make?.toUpperCase(), Model: d.model?.toUpperCase(), ModelYear: d.year,
+          EngineCylinders: d.cylinders, DisplacementL: d.displacement,
+          FuelTypePrimary: d.fuelType, DriveType: d.driveType,
+          BodyClass: d.bodyClass, PlantCity: d.plantCity, PlantCountry: d.plantCountry,
+          _fromCache: true };
+      }
+    } catch {}
+    return null;
+  });
   const [miles, setMiles] = useState("");
   const [vehiclePhotos, setVehiclePhotos] = useState({});
   const [wheelPhotos, setWheelPhotos] = useState({});
@@ -1875,7 +1893,14 @@ export default function App() {
   const toggleNotif = id => setNotifications(n => n.includes(id) ? n.filter(x=>x!==id) : [...n,id]);
   const setNotifCost = (id,val) => setNotifCosts(p=>({...p,[id]:val}));
 
-  const upInfo = (k, v) => setInfo(p => ({ ...p, [k]:v }));
+  const upInfo = (k, v) => {
+    setInfo(p => ({ ...p, [k]:v }));
+    // Persist vehicle identity fields to browser memory
+    if (k === "vin")   localStorage.setItem("oil_inspection_vin",   v);
+    if (k === "make")  localStorage.setItem("oil_inspection_make",  v);
+    if (k === "model") localStorage.setItem("oil_inspection_model", v);
+    if (k === "year")  localStorage.setItem("oil_inspection_year",  v);
+  };
   const upFluid = (id, p) => setFluidStates(s => ({ ...s, [id]:{ ...s[id], ...p } }));
 
   // ── VIN lookup via NHTSA ──
@@ -1896,6 +1921,19 @@ export default function App() {
         if (year  && year  !== "0") upInfo("year",  year);
         if (v.Make)  upInfo("make",  make);
         if (v.Model) upInfo("model", model);
+        // Save full vehicle data to cache
+        const cacheData = {
+          vin: info.vin.trim(), year, make, model,
+          cylinders: v.EngineCylinders, displacement: v.DisplacementL,
+          fuelType: v.FuelTypePrimary, driveType: v.DriveType,
+          bodyClass: v.BodyClass, plantCity: v.PlantCity, plantCountry: v.PlantCountry,
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem("oil_inspection_vin",     info.vin.trim());
+        localStorage.setItem("oil_inspection_make",    make);
+        localStorage.setItem("oil_inspection_model",   model);
+        localStorage.setItem("oil_inspection_year",    year || "");
+        localStorage.setItem("oil_inspection_vehicle", JSON.stringify(cacheData));
       } else {
         setVinResult({ error: true, msg: "No vehicle found for this VIN" });
       }
@@ -1937,16 +1975,8 @@ export default function App() {
   }) : [];
 
   return (
-    <div style={{
-      position:"fixed", inset:0,
-      overflowY:"auto", overflowX:"hidden",
-      WebkitOverflowScrolling:"touch",
-      overscrollBehavior:"none",
-      background:"linear-gradient(160deg,#020617 0%,#0f172a 50%,#020617 100%)",
-      fontFamily:"'DM Sans','Segoe UI',sans-serif",
-      color:"#f1f5f9",
-    }}>
-      <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 14px", minHeight:"100%" }}>
+    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#020617 0%,#0f172a 50%,#020617 100%)", fontFamily:"'DM Sans','Segoe UI',sans-serif", color:"#f1f5f9", padding:"20px 14px" }}>
+      <div style={{ maxWidth:960, margin:"0 auto" }}>
 
         {/* Header */}
         <div style={{ textAlign:"center", marginBottom:28 }}>
@@ -2017,17 +2047,27 @@ export default function App() {
                 {vinLoading ? "⏳ Looking up…" : "🔍 Decode VIN"}
               </button>
             </div>
-            <div style={{ marginTop:4 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
               <span style={{ fontSize:10, color: isValidVin(info.vin)?"#22c55e":info.vin.length>0?"#f87171":"#475569" }}>
                 {info.vin.length}/17 characters
                 {isValidVin(info.vin) ? " ✓" : info.vin.length > 0 ? ` — need ${17-info.vin.length} more` : ""}
               </span>
+              {isValidVin(info.vin) && (
+                <span style={{ fontSize:10, color:"#22c55e", display:"flex", alignItems:"center", gap:4 }}>
+                  💾 Saved to browser memory
+                  <button onClick={()=>{ localStorage.removeItem("oil_inspection_vin"); localStorage.removeItem("oil_inspection_make"); localStorage.removeItem("oil_inspection_model"); localStorage.removeItem("oil_inspection_year"); upInfo("vin",""); }}
+                    style={{ fontSize:9, color:"#f87171", background:"none", border:"none", cursor:"pointer", padding:0, textDecoration:"underline" }}>
+                    clear
+                  </button>
+                </span>
+              )}
             </div>
             {vinResult && !vinResult.error && (
               <div style={{ marginTop:6, fontSize:11, color:"#22c55e", background:"#052e16", borderRadius:8, padding:"8px 12px", lineHeight:1.5 }}>
                 ✅ <strong>{vinResult.ModelYear} {vinResult.Make} {vinResult.Model}</strong>
                 {vinResult.EngineCylinders && vinResult.EngineCylinders !== "0" ? ` · ${vinResult.EngineCylinders}-cyl` : ""}
                 {vinResult.DisplacementL && vinResult.DisplacementL !== "0" ? ` ${parseFloat(vinResult.DisplacementL).toFixed(1)}L` : ""}
+                {vinResult._fromCache && <span style={{ fontSize:9, color:"#4ade80", marginLeft:8 }}>💾 loaded from cache</span>}
               </div>
             )}
             {vinResult?.error && (
