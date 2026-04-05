@@ -837,156 +837,93 @@ function DipstickGauge({ label, colors, colorLabels, level, colorIdx, onLevelCha
 
 // ── Oil Inspection Checks data ────────────────────────────────────────────────
 const OIL_CHECKS = [
-  // ── BASIC CHECKS ──
   {
-    id:"smell", label:"Oil Smell", icon:"👃",
-    description:"Pull dipstick and smell the oil",
-    category:"basic",
-    options:[
-      { value:"normal",  label:"Normal / No odor",     color:"#22c55e", hint:"Fresh or slightly used oil with no odor — normal" },
-      { value:"burnt",   label:"Burnt / Sharp smell",   color:"#f97316", hint:"Burnt smell = oil overheated or engine running hot" },
-      { value:"fuel",    label:"Gasoline smell",        color:"#ef4444", hint:"Gas in oil = fuel injector leak or short trips. Change oil immediately." },
-      { value:"sweet",   label:"Sweet / Coolant smell", color:"#ef4444", hint:"Sweet smell = coolant contamination. Head gasket may be blown." },
-      { value:"sulfur",  label:"Sulfur / Rotten egg",   color:"#dc2626", hint:"Sulfur smell = catalytic converter or fuel mixture issue." },
+    id: "smell",
+    label: "Oil Smell",
+    icon: "👃",
+    description: "Pull dipstick and smell the oil",
+    options: [
+      { value:"normal",   label:"Normal / No odor",        color:"#22c55e", hint:"Fresh or slightly used oil with no odor — normal" },
+      { value:"burnt",    label:"Burnt / Sharp smell",      color:"#f97316", hint:"Burnt smell = oil overheated or engine running hot" },
+      { value:"fuel",     label:"Gasoline smell",           color:"#ef4444", hint:"Gas in oil = fuel injector leak or short trips. Change oil immediately." },
+      { value:"sweet",    label:"Sweet / Coolant smell",    color:"#ef4444", hint:"Sweet smell = coolant contamination. Head gasket may be blown." },
+      { value:"sulfur",   label:"Sulfur / Rotten egg",      color:"#dc2626", hint:"Sulfur smell = catalytic converter or fuel mixture issue." },
     ],
   },
   {
-    id:"viscosity", label:"Viscosity / Thickness", icon:"💧",
-    description:"Rub oil between fingers to test thickness",
-    category:"basic",
-    options:[
-      { value:"normal",  label:"Normal — smooth & slippery", color:"#22c55e", hint:"Good viscosity for the oil weight specified" },
-      { value:"thin",    label:"Thin / Watery",              color:"#eab308", hint:"Too thin = oil diluted by fuel or water. Investigate and change." },
-      { value:"thick",   label:"Thick / Sluggish",           color:"#f97316", hint:"Overly thick = sludge buildup or wrong oil weight." },
-      { value:"gritty",  label:"Gritty / Sandy texture",     color:"#ef4444", hint:"Grit = metal particles or dirt contamination. Change oil now." },
-      { value:"foamy",   label:"Foamy / Bubbly",             color:"#dc2626", hint:"Foamy = coolant mixed with oil. Serious — stop driving." },
+    id: "viscosity",
+    label: "Viscosity / Thickness",
+    icon: "💧",
+    description: "Rub oil between fingers to test thickness",
+    options: [
+      { value:"normal",   label:"Normal — smooth & slippery", color:"#22c55e", hint:"Good viscosity for the oil weight specified" },
+      { value:"thin",     label:"Thin / Watery",              color:"#eab308", hint:"Too thin = oil diluted by fuel or water. Investigate and change." },
+      { value:"thick",    label:"Thick / Sluggish",           color:"#f97316", hint:"Overly thick = sludge buildup or wrong oil weight." },
+      { value:"gritty",   label:"Gritty / Sandy texture",     color:"#ef4444", hint:"Grit = metal particles or dirt contamination. Change oil now." },
+      { value:"foamy",    label:"Foamy / Bubbly",             color:"#dc2626", hint:"Foamy = coolant mixed with oil. Serious — stop driving." },
     ],
   },
   {
-    id:"color", label:"Oil Color (Visual)", icon:"🎨",
-    description:"Hold dipstick up to light for color check",
-    category:"basic",
-    options:[
-      { value:"clear_yellow", label:"Clear / Light yellow", color:"#fef08a", hint:"Just changed — brand new oil" },
-      { value:"amber",        label:"Amber / Golden",        color:"#f59e0b", hint:"Good — oil doing its job, normal use" },
-      { value:"brown",        label:"Dark brown",            color:"#92400e", hint:"Aging oil — monitor, change soon" },
-      { value:"black",        label:"Black / Opaque",        color:"#475569", hint:"Overdue for change. Carbon and soot buildup." },
-      { value:"milky",        label:"Milky / Creamy",        color:"#e2e8f0", hint:"Coolant contamination — head gasket issue. Do not drive." },
+    id: "color",
+    label: "Oil Color (Visual)",
+    icon: "🎨",
+    description: "Hold dipstick up to light for color check",
+    options: [
+      { value:"clear_yellow", label:"Clear / Light yellow",   color:"#fef08a", hint:"Just changed — brand new oil" },
+      { value:"amber",        label:"Amber / Golden",         color:"#f59e0b", hint:"Good — oil doing its job, normal use" },
+      { value:"brown",        label:"Dark brown",             color:"#92400e", hint:"Aging oil — monitor, change soon" },
+      { value:"black",        label:"Black / Opaque",         color:"#475569", hint:"Overdue for change. Carbon and soot buildup." },
+      { value:"milky",        label:"Milky / Creamy",         color:"#e2e8f0", hint:"Coolant contamination — head gasket issue. Do not drive." },
     ],
   },
   {
-    id:"contaminants", label:"Contaminants Check", icon:"🔬",
-    description:"Inspect dipstick for particles or residue",
-    category:"basic",
-    options:[
-      { value:"clean",   label:"Clean — no particles",       color:"#22c55e", hint:"No visible contamination detected" },
-      { value:"metal",   label:"Metal flakes/shavings",      color:"#ef4444", hint:"Metal particles = engine wear. Immediate inspection needed." },
-      { value:"sludge",  label:"Sludge / Tar-like deposits", color:"#b45309", hint:"Sludge buildup = neglected oil changes. Flush and change." },
-      { value:"water",   label:"Water droplets",             color:"#f97316", hint:"Water = condensation or head gasket leak." },
-      { value:"dirt",    label:"Dirt / Debris",              color:"#d97706", hint:"Dirt = air filter failure or crankcase breather issue." },
+    id: "contaminants",
+    label: "Contaminants Check",
+    icon: "🔬",
+    description: "Inspect dipstick for particles or residue",
+    options: [
+      { value:"clean",    label:"Clean — no particles",       color:"#22c55e", hint:"No visible contamination detected" },
+      { value:"metal",    label:"Metal flakes/shavings",      color:"#ef4444", hint:"Metal particles = engine wear. Immediate inspection needed." },
+      { value:"sludge",   label:"Sludge / Tar-like deposits", color:"#b45309", hint:"Sludge buildup = neglected oil changes. Flush and change." },
+      { value:"water",    label:"Water droplets",             color:"#f97316", hint:"Water = condensation or head gasket leak." },
+      { value:"dirt",     label:"Dirt / Debris",              color:"#d97706", hint:"Dirt = air filter failure or crankcase breather issue." },
     ],
   },
   {
-    id:"leaks", label:"External Leak Check", icon:"🔍",
-    description:"Inspect engine exterior and ground beneath",
-    category:"basic",
-    options:[
-      { value:"none",     label:"No leaks detected",   color:"#22c55e", hint:"No visible leaks on engine or ground" },
-      { value:"seeping",  label:"Slight seep / Wet spots", color:"#eab308", hint:"Minor seeping — monitor at next service" },
-      { value:"dripping", label:"Active drip",          color:"#f97316", hint:"Active drip — locate and seal source before next drive" },
-      { value:"major",    label:"Major leak / Pooling", color:"#ef4444", hint:"Major leak — do not drive. Tow to shop immediately." },
+    id: "leaks",
+    label: "External Leak Check",
+    icon: "🔍",
+    description: "Inspect engine exterior and ground beneath",
+    options: [
+      { value:"none",     label:"No leaks detected",          color:"#22c55e", hint:"No visible leaks on engine or ground" },
+      { value:"seeping",  label:"Slight seep / Wet spots",    color:"#eab308", hint:"Minor seeping — monitor at next service" },
+      { value:"dripping", label:"Active drip",                color:"#f97316", hint:"Active drip — locate and seal source before next drive" },
+      { value:"major",    label:"Major leak / Pooling",       color:"#ef4444", hint:"Major leak — do not drive. Tow to shop immediately." },
     ],
   },
   {
-    id:"oilPressure", label:"Oil Pressure Warning Light", icon:"⚠️",
-    description:"Check if oil pressure warning light has appeared",
-    category:"basic",
-    options:[
-      { value:"off",     label:"Light OFF — normal",      color:"#22c55e", hint:"No oil pressure warning — system operating normally" },
-      { value:"flicker", label:"Flickered briefly",        color:"#eab308", hint:"Occasional flicker = low level or failing sensor" },
-      { value:"on",      label:"Light ON while driving",   color:"#ef4444", hint:"Constant light = low pressure. Stop engine immediately." },
+    id: "oilPressure",
+    label: "Oil Pressure Warning Light",
+    icon: "⚠️",
+    description: "Check if oil pressure warning light has appeared",
+    options: [
+      { value:"off",      label:"Light OFF — normal",         color:"#22c55e", hint:"No oil pressure warning — system operating normally" },
+      { value:"flicker",  label:"Flickered briefly",          color:"#eab308", hint:"Occasional flicker = low level or failing sensor" },
+      { value:"on",       label:"Light ON while driving",     color:"#ef4444", hint:"Constant light = low pressure. Stop engine immediately." },
     ],
   },
   {
-    id:"consumption", label:"Oil Consumption", icon:"📉",
-    description:"Ask customer how often they add oil between changes",
-    category:"basic",
-    options:[
-      { value:"none",     label:"No top-off needed",        color:"#22c55e", hint:"Normal consumption — no oil added between changes" },
-      { value:"minor",    label:"Add ~1 qt per 3,000 mi",  color:"#eab308", hint:"Slightly elevated — monitor but acceptable for older engines" },
-      { value:"moderate", label:"Add 1 qt per 1,000 mi",   color:"#f97316", hint:"High consumption — check valve seals and piston rings" },
-      { value:"severe",   label:"Add 1+ qt per 500 mi",    color:"#ef4444", hint:"Severe consumption — major engine wear or leak present" },
+    id: "consumption",
+    label: "Oil Consumption",
+    icon: "📉",
+    description: "Ask customer how often they add oil between changes",
+    options: [
+      { value:"none",     label:"No top-off needed",          color:"#22c55e", hint:"Normal consumption — no oil added between changes" },
+      { value:"minor",    label:"Add ~1 qt per 3,000 mi",    color:"#eab308", hint:"Slightly elevated — monitor but acceptable for older engines" },
+      { value:"moderate", label:"Add 1 qt per 1,000 mi",     color:"#f97316", hint:"High consumption — check valve seals and piston rings" },
+      { value:"severe",   label:"Add 1+ qt per 500 mi",      color:"#ef4444", hint:"Severe consumption — major engine wear or leak present" },
     ],
   },
-
-  // ── ENGINE HEALTH CHECKS ──
-  {
-    id:"valveCoverGasket", label:"Valve Cover Gasket", icon:"🔧",
-    description:"Inspect valve cover for oil seepage",
-    category:"engine",
-    options:[
-      { value:"dry",      label:"Dry — no leaks",       color:"#22c55e", hint:"Gasket in good condition, no seepage" },
-      { value:"seeping",  label:"Slight seep",           color:"#eab308", hint:"Minor seeping — monitor, replace at next service" },
-      { value:"leaking",  label:"Active leak",           color:"#ef4444", hint:"Valve cover gasket needs replacement now" },
-    ],
-  },
-  {
-    id:"oilPanGasket", label:"Oil Pan Gasket", icon:"🛠️",
-    description:"Inspect oil pan for leaks at bottom of engine",
-    category:"engine",
-    options:[
-      { value:"dry",      label:"Dry — no leaks",       color:"#22c55e", hint:"Oil pan gasket in good condition" },
-      { value:"seeping",  label:"Slight seep",           color:"#eab308", hint:"Minor seep — monitor closely" },
-      { value:"leaking",  label:"Active leak",           color:"#ef4444", hint:"Oil pan gasket replacement needed" },
-    ],
-  },
-  {
-    id:"timingCoverSeal", label:"Timing Cover Seal", icon:"⚙️",
-    description:"Check front of engine for oil around timing cover",
-    category:"engine",
-    options:[
-      { value:"dry",      label:"Dry — no leaks",       color:"#22c55e", hint:"Timing cover seal intact" },
-      { value:"seeping",  label:"Seeping",               color:"#eab308", hint:"Monitor — may need seal replacement soon" },
-      { value:"leaking",  label:"Active leak",           color:"#ef4444", hint:"Timing cover seal leaking — requires repair" },
-    ],
-  },
-  {
-    id:"rearMainSeal", label:"Rear Main Seal", icon:"🔩",
-    description:"Check rear of engine/bell housing for oil",
-    category:"engine",
-    options:[
-      { value:"dry",      label:"Dry — no leaks",       color:"#22c55e", hint:"Rear main seal in good condition" },
-      { value:"seeping",  label:"Oil residue present",   color:"#eab308", hint:"Watch for worsening — can lead to significant oil loss" },
-      { value:"leaking",  label:"Active leak",           color:"#ef4444", hint:"Rear main seal failure — major repair required" },
-    ],
-  },
-  {
-    id:"pcvValve", label:"PCV Valve Condition", icon:"🌬️",
-    description:"Check PCV valve for blockage or failure",
-    category:"engine",
-    options:[
-      { value:"good",     label:"Functioning — rattles freely", color:"#22c55e", hint:"PCV valve working correctly — rattles when shaken" },
-      { value:"sticky",   label:"Sticky / sluggish",            color:"#eab308", hint:"PCV valve may be sticking — clean or replace" },
-      { value:"clogged",  label:"Clogged / no rattle",          color:"#ef4444", hint:"PCV valve clogged — replace immediately. Causes pressure buildup and oil leaks." },
-    ],
-  },
-  {
-    id:"crankcaseBreather", label:"Crankcase Breather Hose", icon:"🔗",
-    description:"Inspect breather hose for cracks or oil buildup",
-    category:"engine",
-    options:[
-      { value:"good",     label:"Clear — no cracks",    color:"#22c55e", hint:"Crankcase breather hose in good condition" },
-      { value:"oily",     label:"Oily buildup present",  color:"#eab308", hint:"Heavy oil buildup — clean or replace hose and inspect PCV" },
-      { value:"cracked",  label:"Cracked / damaged",     color:"#ef4444", hint:"Cracked breather hose — replace immediately to prevent vacuum leak" },
-    ],
-  },
-];
-
-// ── Service History (text inputs, not buttons) ────────────────────────────────
-// ── Engine Health Check categories ────────────────────────────────────────────
-const CHECK_CATEGORIES = [
-  { id:"basic",  label:"Oil Condition Checks",   icon:"🛢️" },
-  { id:"engine", label:"Engine Health Checks",   icon:"🔧" },
 ];
 
 // ── OilCheckRow component ──────────────────────────────────────────────────────
@@ -1020,148 +957,15 @@ function OilCheckRow({ check, selected, onSelect }) {
       {selected && (() => {
         const opt = check.options.find(o => o.value === selected);
         return opt ? (
-          <div style={{ marginTop:8, fontSize:10, color:opt.color, background:`${opt.color}12`, borderRadius:6, padding:"5px 10px", lineHeight:1.4, fontWeight:500 }}>
+          <div style={{
+            marginTop:8, fontSize:10, color: opt.color,
+            background:`${opt.color}12`, borderRadius:6, padding:"5px 10px",
+            lineHeight:1.4, fontWeight:500,
+          }}>
             💡 {opt.hint}
           </div>
         ) : null;
       })()}
-    </div>
-  );
-}
-
-// ── Measurements & Tests Section ──────────────────────────────────────────────
-function MeasurementsSection({ data, onChange }) {
-  const field = (label, key, placeholder, unit) => (
-    <div key={key} style={{ display:"flex", flexDirection:"column", gap:3 }}>
-      <label style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.07em" }}>{label}</label>
-      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-        <input value={data[key]||""} onChange={e=>onChange({...data,[key]:e.target.value})}
-          placeholder={placeholder}
-          style={{ flex:1, background:"#1e293b", border:"1.5px solid #334155", borderRadius:8, padding:"8px 10px", color:"#f1f5f9", fontSize:13, outline:"none" }}/>
-        {unit&&<span style={{ fontSize:11, color:"#64748b", flexShrink:0 }}>{unit}</span>}
-      </div>
-    </div>
-  );
-  return (
-    <div style={{ background:"#0f172a", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>📊 Measurements & Tests</div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:10 }}>
-        {field("Oil Temp at Inspection", "oilTemp", "e.g. 195", "°F")}
-        {field("Oil Pressure Reading", "oilPressurePSI", "e.g. 45", "PSI")}
-        {field("Moisture / Water Test", "moistureTest", "Pass / Fail / %", "")}
-        {field("TBN (Base Number)", "tbn", "e.g. 6.5", "")}
-      </div>
-    </div>
-  );
-}
-
-// ── Oil Analysis Section ───────────────────────────────────────────────────────
-function OilAnalysisSection({ data, onChange }) {
-  const field = (label, key, placeholder) => (
-    <div key={key} style={{ display:"flex", flexDirection:"column", gap:3 }}>
-      <label style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.07em" }}>{label}</label>
-      <input value={data[key]||""} onChange={e=>onChange({...data,[key]:e.target.value})}
-        placeholder={placeholder}
-        style={{ background:"#1e293b", border:"1.5px solid #334155", borderRadius:8, padding:"8px 10px", color:"#f1f5f9", fontSize:13, outline:"none" }}/>
-    </div>
-  );
-  return (
-    <div style={{ background:"#0f172a", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:"#a78bfa", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>🧪 Used Oil Sample Analysis</div>
-      <div style={{ fontSize:10, color:"#475569", marginBottom:12 }}>Optional — from lab analysis (Blackstone, Polaris, etc.)</div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10 }}>
-        {field("Iron (Fe) ppm",     "fe",  "e.g. 12")}
-        {field("Copper (Cu) ppm",   "cu",  "e.g. 4")}
-        {field("Aluminum (Al) ppm", "al",  "e.g. 6")}
-        {field("Chromium (Cr) ppm", "cr",  "e.g. 1")}
-        {field("Soot Level",        "soot","e.g. Low / 0.3%")}
-        {field("Oxidation Level",   "oxid","e.g. Normal / High")}
-        {field("Lab Reference #",   "labRef","e.g. BL-2024-001")}
-      </div>
-    </div>
-  );
-}
-
-// ── Service History Section ────────────────────────────────────────────────────
-function ServiceHistorySection({ data, onChange }) {
-  const field = (label, key, placeholder, type="text") => (
-    <div key={key} style={{ display:"flex", flexDirection:"column", gap:3 }}>
-      <label style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.07em" }}>{label}</label>
-      <input type={type} value={data[key]||""} onChange={e=>onChange({...data,[key]:e.target.value})}
-        placeholder={placeholder}
-        style={{ background:"#1e293b", border:"1.5px solid #334155", borderRadius:8, padding:"8px 10px", color:"#f1f5f9", fontSize:13, outline:"none" }}/>
-    </div>
-  );
-  return (
-    <div style={{ background:"#0f172a", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:"#34d399", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>📋 Service History</div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:10 }}>
-        {field("Last Oil Change Date",    "lastChangeDate",  "e.g. 01/15/2025", "date")}
-        {field("Last Change Mileage",     "lastChangeMiles", "e.g. 87000")}
-        {field("Miles on Current Oil",    "milesOnOil",      "e.g. 4,250")}
-        {field("Last Oil Brand Used",     "lastOilBrand",    "e.g. Mobil 1")}
-        {field("Last Oil Viscosity",      "lastOilViscosity","e.g. 0W-20")}
-        {field("Next Change Due Date",    "nextChangeDate",  "e.g. 07/15/2025", "date")}
-        {field("Next Change Due Mileage", "nextChangeMiles", "e.g. 92000")}
-      </div>
-    </div>
-  );
-}
-
-// ── Customer Notifications Section ────────────────────────────────────────────
-const NOTIFICATION_ITEMS = [
-  { id:"oilChange",     label:"Oil & Filter Change",          priority:"now",  icon:"🛢️" },
-  { id:"gaskLeak",      label:"Gasket / Seal Leak Repair",    priority:"now",  icon:"🔧" },
-  { id:"pcvReplace",    label:"PCV Valve Replacement",        priority:"soon", icon:"🌬️" },
-  { id:"oilFlush",      label:"Engine Oil Flush",             priority:"now",  icon:"🔄" },
-  { id:"oilSample",     label:"Send Oil Sample to Lab",       priority:"soon", icon:"🧪" },
-  { id:"monitorConsump",label:"Monitor Oil Consumption",      priority:"watch",icon:"📉" },
-  { id:"monitorLeak",   label:"Monitor Leak — Check Next Svc",priority:"watch",icon:"💧" },
-  { id:"engineInspect", label:"Full Engine Inspection",       priority:"now",  icon:"🔩" },
-];
-
-const PRIORITY_STYLES = {
-  now:   { color:"#ef4444", bg:"#1c0505", border:"#7f1d1d", label:"DO NOW" },
-  soon:  { color:"#eab308", bg:"#1c1400", border:"#854d0e", label:"DO SOON" },
-  watch: { color:"#60a5fa", bg:"#051525", border:"#1e3a5f", label:"WATCH" },
-};
-
-function CustomerNotificationsSection({ selected, onToggle, costs, onCostChange }) {
-  return (
-    <div style={{ background:"#0f172a", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:"#f97316", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>🔔 Customer Notifications</div>
-      <div style={{ fontSize:10, color:"#475569", marginBottom:12 }}>Select items to flag for the customer. These appear prominently on the printed report.</div>
-      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-        {NOTIFICATION_ITEMS.map(item => {
-          const isOn = selected.includes(item.id);
-          const ps = PRIORITY_STYLES[item.priority];
-          return (
-            <div key={item.id} style={{
-              display:"flex", alignItems:"center", gap:10,
-              background: isOn ? ps.bg : "#1e293b",
-              border:`1.5px solid ${isOn ? ps.border : "#334155"}`,
-              borderRadius:10, padding:"10px 12px", transition:"all 0.2s",
-            }}>
-              <button onClick={() => onToggle(item.id)}
-                style={{ width:22, height:22, borderRadius:6, border:`2px solid ${isOn?ps.color:"#475569"}`, background:isOn?ps.color:"transparent", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12 }}>
-                {isOn ? "✓" : ""}
-              </button>
-              <span style={{ fontSize:14 }}>{item.icon}</span>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:12, fontWeight:700, color: isOn?ps.color:"#94a3b8" }}>{item.label}</div>
-                <span style={{ fontSize:9, fontWeight:800, color:ps.color, background:`${ps.color}18`, padding:"1px 6px", borderRadius:99 }}>{ps.label}</span>
-              </div>
-              {isOn && (
-                <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                  <span style={{ fontSize:10, color:"#64748b" }}>Est. $</span>
-                  <input value={costs[item.id]||""} onChange={e=>onCostChange(item.id,e.target.value)}
-                    placeholder="0.00" style={{ width:70, background:"#0f172a", border:"1px solid #334155", borderRadius:6, padding:"4px 8px", color:"#f1f5f9", fontSize:12, outline:"none" }}/>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -1388,7 +1192,7 @@ function SectionHeader({ step, title, complete }) {
 }
 
 // ─── Print Modal ──────────────────────────────────────────────────────────────
-function PrintModal({ info, miles, fluidStates, measurements, oilAnalysis, serviceHistory, notifications, notifCosts, onClose }) {
+function PrintModal({ info, miles, fluidStates, onClose }) {
   const date = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
   const rows = FLUIDS.filter(f => fluidStates[f.id]?.toggled).map(f => {
     const s = fluidStates[f.id];
@@ -1642,74 +1446,6 @@ ${baSection("💧 Engine Oil Leak — Before &amp; After", [
   ["Oil Leak Area", "oilLeak_before", "oilLeak_after"],
 ])}
 
-<!-- MEASUREMENTS & TESTS -->
-${(measurements && Object.keys(measurements).some(k=>measurements[k])) ? `
-<div class="section">
-  <div class="section-title">📊 Measurements &amp; Tests</div>
-  <div class="info-grid">
-    ${measurements.oilTemp       ? `<div class="kv"><label>Oil Temp</label><span>${measurements.oilTemp} °F</span></div>` : ""}
-    ${measurements.oilPressurePSI? `<div class="kv"><label>Oil Pressure</label><span>${measurements.oilPressurePSI} PSI</span></div>` : ""}
-    ${measurements.moistureTest  ? `<div class="kv"><label>Moisture Test</label><span>${measurements.moistureTest}</span></div>` : ""}
-    ${measurements.tbn           ? `<div class="kv"><label>TBN</label><span>${measurements.tbn}</span></div>` : ""}
-  </div>
-</div>` : ""}
-
-<!-- OIL ANALYSIS -->
-${(oilAnalysis && Object.keys(oilAnalysis).some(k=>oilAnalysis[k])) ? `
-<div class="section">
-  <div class="section-title">🧪 Used Oil Sample Analysis</div>
-  <div class="info-grid">
-    ${oilAnalysis.fe     ? `<div class="kv"><label>Iron (Fe)</label><span>${oilAnalysis.fe} ppm</span></div>` : ""}
-    ${oilAnalysis.cu     ? `<div class="kv"><label>Copper (Cu)</label><span>${oilAnalysis.cu} ppm</span></div>` : ""}
-    ${oilAnalysis.al     ? `<div class="kv"><label>Aluminum (Al)</label><span>${oilAnalysis.al} ppm</span></div>` : ""}
-    ${oilAnalysis.cr     ? `<div class="kv"><label>Chromium (Cr)</label><span>${oilAnalysis.cr} ppm</span></div>` : ""}
-    ${oilAnalysis.soot   ? `<div class="kv"><label>Soot Level</label><span>${oilAnalysis.soot}</span></div>` : ""}
-    ${oilAnalysis.oxid   ? `<div class="kv"><label>Oxidation</label><span>${oilAnalysis.oxid}</span></div>` : ""}
-    ${oilAnalysis.labRef ? `<div class="kv"><label>Lab Reference</label><span>${oilAnalysis.labRef}</span></div>` : ""}
-  </div>
-</div>` : ""}
-
-<!-- SERVICE HISTORY -->
-${(serviceHistory && Object.keys(serviceHistory).some(k=>serviceHistory[k])) ? `
-<div class="section">
-  <div class="section-title">📋 Service History</div>
-  <div class="info-grid">
-    ${serviceHistory.lastChangeDate  ? `<div class="kv"><label>Last Oil Change Date</label><span>${serviceHistory.lastChangeDate}</span></div>` : ""}
-    ${serviceHistory.lastChangeMiles ? `<div class="kv"><label>Last Change Mileage</label><span>${serviceHistory.lastChangeMiles}</span></div>` : ""}
-    ${serviceHistory.milesOnOil      ? `<div class="kv"><label>Miles on Current Oil</label><span>${serviceHistory.milesOnOil}</span></div>` : ""}
-    ${serviceHistory.lastOilBrand    ? `<div class="kv"><label>Last Oil Brand</label><span>${serviceHistory.lastOilBrand}</span></div>` : ""}
-    ${serviceHistory.lastOilViscosity? `<div class="kv"><label>Last Oil Viscosity</label><span>${serviceHistory.lastOilViscosity}</span></div>` : ""}
-    ${serviceHistory.nextChangeDate  ? `<div class="kv"><label>Next Change Date</label><span>${serviceHistory.nextChangeDate}</span></div>` : ""}
-    ${serviceHistory.nextChangeMiles ? `<div class="kv"><label>Next Change Mileage</label><span>${serviceHistory.nextChangeMiles}</span></div>` : ""}
-  </div>
-</div>` : ""}
-
-<!-- CUSTOMER NOTIFICATIONS -->
-${(notifications && notifications.length > 0) ? `
-<div class="section">
-  <div class="section-title">🔔 Customer Notifications &amp; Recommendations</div>
-  <table>
-    <thead><tr><th>Item</th><th>Priority</th><th>Est. Cost</th></tr></thead>
-    <tbody>
-      ${notifications.map(id => {
-        const item = NOTIFICATION_ITEMS.find(n=>n.id===id);
-        if (!item) return "";
-        const ps = PRIORITY_STYLES[item.priority];
-        const cost = notifCosts[id] ? `$${notifCosts[id]}` : "—";
-        return `<tr>
-          <td><strong>${item.icon} ${item.label}</strong></td>
-          <td style="color:${ps.color};font-weight:700">${ps.label}</td>
-          <td>${cost}</td>
-        </tr>`;
-      }).join("")}
-    </tbody>
-  </table>
-  ${notifications.some(id=>NOTIFICATION_ITEMS.find(n=>n.id===id)?.priority==="now") ?
-    `<div style="margin-top:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:11px;color:#991b1b;font-weight:600">
-      ACTION REQUIRED: One or more items above require immediate attention. Please discuss with your service advisor before leaving.
-    </div>` : ""}
-</div>` : ""}
-
 <!-- SIGNATURE BLOCK -->
 <div class="section">
   <div class="section-title">✍️ Signatures &amp; Authorization</div>
@@ -1885,14 +1621,6 @@ export default function App() {
       oilChecks: Object.fromEntries(OIL_CHECKS.map(c => [c.id, ""]))
     }]))
   );
-  const [measurements,    setMeasurements]    = useState({});
-  const [oilAnalysis,     setOilAnalysis]     = useState({});
-  const [serviceHistory,  setServiceHistory]  = useState({});
-  const [notifications,   setNotifications]   = useState([]);
-  const [notifCosts,      setNotifCosts]      = useState({});
-
-  const toggleNotif = id => setNotifications(n => n.includes(id) ? n.filter(x=>x!==id) : [...n,id]);
-  const setNotifCost = (id,val) => setNotifCosts(p=>({...p,[id]:val}));
 
   const upInfo = (k, v) => {
     setInfo(p => ({ ...p, [k]:v }));
@@ -2135,34 +1863,6 @@ export default function App() {
                 photoUploaded={!!fluidPhotos[f.id]}/>
             ))}
           </div>
-
-          {/* ── Measurements & Tests ── */}
-          <div style={{ marginTop:20 }}>
-            <MeasurementsSection data={measurements} onChange={setMeasurements}/>
-          </div>
-
-          {/* ── Engine Health Checks ── */}
-          <div style={{ marginTop:4 }}>
-            <div style={{ background:"#0f172a", borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"#f97316", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>🔧 Engine Health Checks</div>
-              {OIL_CHECKS.filter(c=>c.category==="engine").map(check => (
-                <OilCheckRow key={check.id} check={check}
-                  selected={fluidStates[FLUIDS[0].id]?.oilChecks?.[check.id]||""}
-                  onSelect={val=>upFluid(FLUIDS[0].id,{oilChecks:{...fluidStates[FLUIDS[0].id]?.oilChecks,[check.id]:val}})}/>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Oil Analysis ── */}
-          <OilAnalysisSection data={oilAnalysis} onChange={setOilAnalysis}/>
-
-          {/* ── Service History ── */}
-          <ServiceHistorySection data={serviceHistory} onChange={setServiceHistory}/>
-
-          {/* ── Customer Notifications ── */}
-          <CustomerNotificationsSection
-            selected={notifications} onToggle={toggleNotif}
-            costs={notifCosts} onCostChange={setNotifCost}/>
         </div>
 
         {/* ── STEP 5: Dipstick & Dashboard — Before & After ── */}
@@ -2258,12 +1958,7 @@ export default function App() {
         <div style={{ height:40 }}/>
       </div>
 
-      {showReport && <PrintModal
-        info={{...info, _vehiclePhotos:vehiclePhotos, _wheelPhotos:wheelPhotos, _fluidPhotos:fluidPhotos, _baPhotos:baPhotos}}
-        miles={miles} fluidStates={fluidStates}
-        measurements={measurements} oilAnalysis={oilAnalysis}
-        serviceHistory={serviceHistory} notifications={notifications} notifCosts={notifCosts}
-        onClose={()=>setShowReport(false)}/>}
+      {showReport && <PrintModal info={{...info, _vehiclePhotos:vehiclePhotos, _wheelPhotos:wheelPhotos, _fluidPhotos:fluidPhotos, _baPhotos:baPhotos}} miles={miles} fluidStates={fluidStates} onClose={()=>setShowReport(false)}/>}
     </div>
   );
 }
