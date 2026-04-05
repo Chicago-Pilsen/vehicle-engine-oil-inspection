@@ -221,72 +221,98 @@ function getOilSpecs(make, model) {
   return specs;
 }
 
-// ── VehicleSpecs card — oil-relevant fields only ─────────────────────────────
+// Common tools needed for ANY oil change
+const UNIVERSAL_TOOLS = [
+  "Safety glasses","Nitrile gloves","Shop rags / paper towels",
+  "New drain plug washer/gasket","Oil catch pan (labeled for recycling)",
+  "Plastic sheeting or cardboard (floor protection)",
+];
+
+// ── VehicleSpecs card shown after VIN decode ──────────────────────────────────
 function VehicleSpecsCard({ vinData, make, model }) {
   const specs = getOilSpecs(make, model);
   if (!vinData || vinData.error) return null;
 
-  // Only pull fields that directly relate to engine oil inspection
-  const cylinders   = vinData.EngineCylinders && vinData.EngineCylinders !== "0" ? vinData.EngineCylinders : null;
-  const displacement = vinData.DisplacementL  && vinData.DisplacementL  !== "0" ? parseFloat(vinData.DisplacementL).toFixed(1) : null;
-  const fuelType    = vinData.FuelTypePrimary || null;
-  // Diesel engines need different oil — flag it
-  const isDiesel    = fuelType?.toLowerCase().includes("diesel");
-  const isHybrid    = fuelType?.toLowerCase().includes("hybrid") || fuelType?.toLowerCase().includes("electric");
+  const cylinders  = vinData.EngineCylinders && vinData.EngineCylinders !== "0" ? vinData.EngineCylinders : null;
+  const displacement = vinData.DisplacementL && vinData.DisplacementL !== "0" ? parseFloat(vinData.DisplacementL).toFixed(1) : null;
+  const engineModel  = vinData.EngineModel || null;
+  const fuelType     = vinData.FuelTypePrimary || null;
+  const driveType    = vinData.DriveType || null;
+  const bodyClass    = vinData.BodyClass || null;
+  const plant        = vinData.PlantCity && vinData.PlantCountry ? `${vinData.PlantCity}, ${vinData.PlantCountry}` : null;
+
+  const allTools = specs
+    ? [...UNIVERSAL_TOOLS, ...specs.tools]
+    : UNIVERSAL_TOOLS;
 
   return (
     <div style={{ background:"linear-gradient(135deg,#0a1628,#0f2040)", border:"1.5px solid #1d4ed8", borderRadius:16, padding:20, marginTop:14 }}>
-
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
         <span style={{ fontSize:20 }}>🔎</span>
         <div>
-          <div style={{ fontWeight:800, fontSize:14, color:"#bfdbfe" }}>VIN Decoded — Oil Inspection Specs</div>
+          <div style={{ fontWeight:800, fontSize:14, color:"#bfdbfe" }}>VIN Decoded — Vehicle Specs</div>
           <div style={{ fontSize:10, color:"#3b82f6" }}>{vinData.ModelYear} {vinData.Make} {vinData.Model}</div>
         </div>
       </div>
 
-      {/* Engine facts relevant to oil */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:"8px 14px", marginBottom:14 }}>
+      {/* Engine info grid */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:"8px 16px", marginBottom:16 }}>
         {cylinders && (
           <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
             <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Engine</div>
             <div style={{ fontSize:15, fontWeight:800, color:"#dbeafe" }}>{cylinders}-Cylinder</div>
-            {displacement && <div style={{ fontSize:10, color:"#93c5fd" }}>{displacement}L</div>}
+            {displacement && <div style={{ fontSize:10, color:"#93c5fd" }}>{displacement}L displacement</div>}
           </div>
         )}
         {fuelType && (
-          <div style={{ background: isDiesel?"#1a1a0a": isHybrid?"#0a1a14":"#1e3a5f", borderRadius:8, padding:"8px 10px", border: isDiesel?"1px solid #854d0e": isHybrid?"1px solid #065f46":"none" }}>
-            <div style={{ fontSize:9, color: isDiesel?"#fbbf24": isHybrid?"#34d399":"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Fuel Type</div>
-            <div style={{ fontSize:13, fontWeight:700, color: isDiesel?"#fef08a": isHybrid?"#a7f3d0":"#dbeafe" }}>{fuelType}</div>
-            {isDiesel && <div style={{ fontSize:9, color:"#f59e0b", marginTop:2 }}>⚠️ Use diesel-rated oil</div>}
-            {isHybrid && <div style={{ fontSize:9, color:"#34d399", marginTop:2 }}>⚡ Use OEM-spec hybrid oil</div>}
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Fuel Type</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#dbeafe" }}>{fuelType}</div>
+          </div>
+        )}
+        {driveType && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Drive</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#dbeafe" }}>{driveType}</div>
+          </div>
+        )}
+        {bodyClass && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Body</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#dbeafe" }}>{bodyClass}</div>
+          </div>
+        )}
+        {plant && (
+          <div style={{ background:"#1e3a5f", borderRadius:8, padding:"8px 10px" }}>
+            <div style={{ fontSize:9, color:"#93c5fd", textTransform:"uppercase", letterSpacing:"0.07em", fontWeight:700 }}>Assembled</div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#dbeafe" }}>{plant}</div>
           </div>
         )}
       </div>
 
-      {/* Oil Specs — the core section */}
+      {/* Oil Specs */}
       {specs ? (
-        <div style={{ background:"#0a2040", borderRadius:10, padding:"12px 14px", border:"1px solid #1d4ed8" }}>
+        <div style={{ background:"#0a2040", borderRadius:10, padding:"12px 14px", marginBottom:14, border:"1px solid #1d4ed8" }}>
           <div style={{ fontSize:10, fontWeight:700, color:"#60a5fa", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>
-            🛢️ Recommended Oil Specs
+            🛢️ Recommended Oil Specs for this Vehicle
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 16px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"8px 16px" }}>
             <div>
               <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Oil Type</div>
               <div style={{ fontSize:13, fontWeight:800, color:"#fef08a" }}>{specs.oil}</div>
             </div>
             <div>
-              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Oil Capacity</div>
+              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Capacity</div>
               <div style={{ fontSize:13, fontWeight:800, color:"#bbf7d0" }}>{specs.capacity}</div>
             </div>
             <div>
-              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Drain Plug Socket</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#e0f2fe" }}>{specs.drain}</div>
+              <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Drain Plug</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#e0f2fe" }}>{specs.drain} socket</div>
             </div>
-            <div>
+            <div style={{ gridColumn:"1/-1" }}>
               <div style={{ fontSize:9, color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:2 }}>Oil Filter</div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#fecdd3" }}>{specs.filter}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#fecdd3" }}>🔩 {specs.filter}</div>
             </div>
           </div>
         </div>
@@ -1640,8 +1666,8 @@ export default function App() {
             {vinResult && !vinResult.error && (
               <div style={{ marginTop:6, fontSize:11, color:"#22c55e", background:"#052e16", borderRadius:8, padding:"8px 12px", lineHeight:1.5 }}>
                 ✅ <strong>{vinResult.ModelYear} {vinResult.Make} {vinResult.Model}</strong>
-                {vinResult.EngineCylinders && vinResult.EngineCylinders !== "0" ? ` · ${vinResult.EngineCylinders}-cyl` : ""}
-                {vinResult.DisplacementL && vinResult.DisplacementL !== "0" ? ` ${parseFloat(vinResult.DisplacementL).toFixed(1)}L` : ""}
+                {vinResult.BodyClass ? ` — ${vinResult.BodyClass}` : ""}
+                {vinResult.EngineCylinders ? ` · ${vinResult.EngineCylinders}-cyl` : ""}
                 {vinResult._fromCache && <span style={{ fontSize:9, color:"#4ade80", marginLeft:8 }}>💾 loaded from cache</span>}
               </div>
             )}
