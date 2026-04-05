@@ -970,91 +970,6 @@ function OilCheckRow({ check, selected, onSelect }) {
   );
 }
 
-// ─── Auto-detection logic based on oil color + level ─────────────────────────
-function getAutoDetection(colorIdx, level) {
-  // colorIdx: 0=New/Clear, 1=Amber/Good, 2=Dark Brown, 3=Black/Sludge
-  // Returns { status, urgency, message, recommendation }
-
-  // Black / Sludge — always Service Now regardless of level
-  if (colorIdx === 3) return {
-    status:    "Service Now",
-    urgency:   "critical",
-    message:   "⛔ Oil is BLACK — severely degraded, carbon & soot buildup detected",
-    recommendation: "Immediate oil & filter change required. Do not delay — black oil causes accelerated engine wear.",
-    color:     "#ef4444",
-    bg:        "#1c0505",
-    border:    "#ef4444",
-  };
-
-  // Dark Brown + low level — Service Now
-  if (colorIdx === 2 && level < 30) return {
-    status:    "Service Now",
-    urgency:   "critical",
-    message:   "⛔ Oil is DARK BROWN and critically LOW",
-    recommendation: "Oil change + filter change required immediately. Top off with correct oil grade to prevent engine damage.",
-    color:     "#ef4444",
-    bg:        "#1c0505",
-    border:    "#ef4444",
-  };
-
-  // Dark Brown — Monitor / change soon
-  if (colorIdx === 2) return {
-    status:    "Monitor",
-    urgency:   "warning",
-    message:   "⚠️ Oil is DARK BROWN — aging, approaching end of service life",
-    recommendation: "Schedule oil & filter change soon. Monitor level and color at each fill-up.",
-    color:     "#eab308",
-    bg:        "#1c1400",
-    border:    "#854d0e",
-  };
-
-  // Critically low level regardless of color
-  if (level < 20) return {
-    status:    "Service Now",
-    urgency:   "critical",
-    message:   "⛔ Oil level is CRITICALLY LOW",
-    recommendation: "Top off immediately with correct oil grade. Inspect for leaks. Low oil = risk of engine seizure.",
-    color:     "#ef4444",
-    bg:        "#1c0505",
-    border:    "#ef4444",
-  };
-
-  // Low level — amber or better color
-  if (level < 35) return {
-    status:    "Monitor",
-    urgency:   "warning",
-    message:   "⚠️ Oil level is LOW",
-    recommendation: "Add oil to bring level between L and F marks. Check for leaks if level drops repeatedly.",
-    color:     "#f97316",
-    bg:        "#1c0d00",
-    border:    "#7c3209",
-  };
-
-  // Amber + good level = Pass
-  if (colorIdx === 1 && level >= 35) return {
-    status:    "Pass",
-    urgency:   "ok",
-    message:   "✅ Oil is AMBER — good condition and adequate level",
-    recommendation: "Oil is in good working condition. Continue monitoring per service interval.",
-    color:     "#22c55e",
-    bg:        "#031a0e",
-    border:    "#166534",
-  };
-
-  // New / clear yellow + good level = Pass
-  if (colorIdx === 0 && level >= 35) return {
-    status:    "Pass",
-    urgency:   "ok",
-    message:   "✅ Oil is NEW / freshly changed — excellent condition",
-    recommendation: "Oil recently changed. No action needed. Schedule next change per manufacturer interval.",
-    color:     "#22c55e",
-    bg:        "#031a0e",
-    border:    "#166534",
-  };
-
-  return null;
-}
-
 // ─── Fluid Card ───────────────────────────────────────────────────────────────
 const GAUGE_BOX_H = 400;
 
@@ -1062,16 +977,10 @@ function FluidCard({ fluid, miles, state, onUpdate, photoUploaded }) {
   const rec = mileRec(fluid, miles);
   const recColor = rec?.status==="overdue" ? "#ef4444" : rec?.status==="soon" ? "#eab308" : "#22c55e";
 
-  // Auto-detect based on color and level
-  const autoDetect = getAutoDetection(state.colorIdx, state.level);
-
-  // Auto-apply status whenever color or level changes (unless already manually overridden in this session)
-  const autoStatus = autoDetect?.status || state.status;
-
   return (
     <div style={{
       background: state.alreadyDone ? "linear-gradient(135deg,#0f2a1a,#1a3a2a)" : "#1e293b",
-      border: `1.5px solid ${state.alreadyDone ? "#16a34a" : autoStatus==="Service Now" ? "#ef4444" : autoStatus==="Monitor" ? "#eab308" : "#334155"}`,
+      border: `1.5px solid ${state.alreadyDone ? "#16a34a" : state.status==="Service Now" ? "#ef4444" : "#334155"}`,
       borderRadius:14, padding:"16px 18px", transition:"all 0.3s",
       display:"flex", flexDirection:"column",
     }}>
@@ -1121,38 +1030,16 @@ function FluidCard({ fluid, miles, state, onUpdate, photoUploaded }) {
                   onLevelChange={v=>onUpdate({level:v})} onColorChange={v=>onUpdate({colorIdx:v})}/>
               </div>
 
-              {/* ── AUTO-DETECTION BANNER ── */}
-              {autoDetect && (
-                <div style={{
-                  background: autoDetect.bg,
-                  border: `2px solid ${autoDetect.border}`,
-                  borderRadius:10, padding:"12px 14px", marginBottom:12,
-                }}>
-                  <div style={{ fontSize:13, fontWeight:800, color:autoDetect.color, marginBottom:5 }}>
-                    {autoDetect.message}
-                  </div>
-                  <div style={{ fontSize:11, color:"#94a3b8", lineHeight:1.5 }}>
-                    🔧 {autoDetect.recommendation}
-                  </div>
-                  <div style={{ fontSize:9, color:"#475569", marginTop:5, fontStyle:"italic" }}>
-                    Auto-detected based on oil color &amp; level — tap below to override
-                  </div>
-                </div>
-              )}
-
-              {/* Status buttons — auto pre-selected, tech can override */}
+              {/* Status buttons */}
               <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:10 }}>
-                {["Pass","Monitor","Service Now"].map(s => {
-                  const isActive = (state.status || autoStatus) === s;
-                  return (
-                    <button key={s} onClick={() => onUpdate({status:s})} style={{
-                      flex:1, minWidth:80, padding:"6px 8px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer", transition:"all 0.2s",
-                      background: isActive ? s==="Pass"?"#166534":s==="Monitor"?"#854d0e":"#7f1d1d" : "#0f172a",
-                      border: `1.5px solid ${isActive ? s==="Pass"?"#22c55e":s==="Monitor"?"#eab308":"#ef4444" : "#334155"}`,
-                      color: isActive ? s==="Pass"?"#bbf7d0":s==="Monitor"?"#fef08a":"#fecaca" : "#64748b",
-                    }}>{s==="Pass"?"✅":s==="Monitor"?"⚠️":"🚨"} {s}</button>
-                  );
-                })}
+                {["Pass","Monitor","Service Now"].map(s => (
+                  <button key={s} onClick={() => onUpdate({status:s})} style={{
+                    flex:1, minWidth:80, padding:"6px 8px", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer", transition:"all 0.2s",
+                    background: state.status===s ? s==="Pass"?"#166534":s==="Monitor"?"#854d0e":"#7f1d1d" : "#0f172a",
+                    border: `1.5px solid ${state.status===s ? s==="Pass"?"#22c55e":s==="Monitor"?"#eab308":"#ef4444" : "#334155"}`,
+                    color: state.status===s ? s==="Pass"?"#bbf7d0":s==="Monitor"?"#fef08a":"#fecaca" : "#64748b",
+                  }}>{s==="Pass"?"✅":s==="Monitor"?"⚠️":"🚨"} {s}</button>
+                ))}
               </div>
               <div style={{ fontSize:10, color:"#475569", marginBottom:14, lineHeight:1.5 }}>💡 {fluid.notes}</div>
 
