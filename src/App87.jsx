@@ -1384,6 +1384,10 @@ ${baSection("🔩 Oil Filter &amp; Drain Plug — Before &amp; After", [
   ["Oil Filter",  "oilFilter_before",  "oilFilter_after"],
   ["Drain Plug",  "drainPlug_before",  "drainPlug_after"],
 ])}
+${baSection("💨 Air Filters — Before &amp; After", [
+  ["Engine Air Filter", "airFilter_before",   "airFilter_after"],
+  ["Cabin Air Filter",  "cabinFilter_before", "cabinFilter_after"],
+])}
 ${baSection("🚗 Engine Bay &amp; Oil Cap — Before &amp; After", [
   ["Engine Bay Overview", "engineBay_before", "engineBay_after"],
   ["Oil Cap",             "oilCap_before",    "oilCap_after"],
@@ -1621,6 +1625,7 @@ export default function App() {
             { l:"Oil Inspection",   d:allFluidPhotos },
             { l:"Dipstick & Dash",  d:!!(baPhotos.dipstick_before&&baPhotos.dipstick_after&&baPhotos.dashboard_before&&baPhotos.dashboard_after) },
             { l:"Filter & Plug",    d:!!(baPhotos.oilFilter_before&&baPhotos.oilFilter_after&&baPhotos.drainPlug_before&&baPhotos.drainPlug_after) },
+            { l:"Air Filters",      d:!!(baPhotos.airFilter_before&&baPhotos.airFilter_after&&baPhotos.cabinFilter_before&&baPhotos.cabinFilter_after) },
             { l:"Engine Bay",       d:!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after) },
             { l:"Oil Leak",         d:!!(baPhotos.oilLeak_before&&baPhotos.oilLeak_after) },
           ].map((s, i) => (
@@ -1812,12 +1817,27 @@ export default function App() {
           </div>
         </div>
 
+        {/* ── STEP 7: Air Filters — Before & After ── */}
+        <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:"1.5px solid #334155" }}>
+          <SectionHeader step={7} title="Air Filters — Before & After" complete={!!(baPhotos.airFilter_before&&baPhotos.airFilter_after&&baPhotos.cabinFilter_before&&baPhotos.cabinFilter_after)}/>
+          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
+            Document engine air filter and cabin air filter condition before and after inspection or replacement.
+          </p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:12 }}>
+            <BeforeAfterPair label="Engine Air Filter" icon="💨" desc="Air filter condition — dirt, debris, color"
+              before={baPhotos.airFilter_before} after={baPhotos.airFilter_after}
+              onBefore={v=>setBA("airFilter_before",v)} onAfter={v=>setBA("airFilter_after",v)}/>
+            <BeforeAfterPair label="Cabin Air Filter" icon="🌬️" desc="Cabin filter condition — dust, debris, odor source"
+              before={baPhotos.cabinFilter_before} after={baPhotos.cabinFilter_after}
+              onBefore={v=>setBA("cabinFilter_before",v)} onAfter={v=>setBA("cabinFilter_after",v)}/>
+          </div>
+        </div>
 
-        {/* ── STEP 7: Engine Bay & Oil Service Proof ── */}
+        {/* ── STEP 8: Engine Bay & Oil Service Proof ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
           baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after
           ?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={7} title="Engine Bay & Oil Cap — Before & After"
+          <SectionHeader step={8} title="Engine Bay & Oil Cap — Before & After"
             complete={!!(baPhotos.engineBay_before&&baPhotos.engineBay_after&&baPhotos.oilCap_before&&baPhotos.oilCap_after)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
             Document the engine bay and oil cap condition before and after service.
@@ -1839,7 +1859,7 @@ export default function App() {
         {/* ── STEP 9: Engine Oil Leak — Before & After ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${
           baPhotos.oilLeak_before&&baPhotos.oilLeak_after?"#22c55e":"#334155"}` }}>
-          <SectionHeader step={8} title="Engine Oil Leak — Before & After"
+          <SectionHeader step={9} title="Engine Oil Leak — Before & After"
             complete={!!(baPhotos.oilLeak_before&&baPhotos.oilLeak_after)}/>
           <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>
             Document any oil leak areas — gaskets, seals, drain plug, oil pan, or undercarriage. Capture before service and after to confirm resolved or note ongoing leaks.
@@ -1860,7 +1880,7 @@ export default function App() {
           </button>
         ) : (
           <div style={{ background:"#1e293b", border:"2px dashed #334155", borderRadius:14, padding:"16px 20px", textAlign:"center", fontSize:13, color:"#475569", fontWeight:700 }}>
-            🔒 Complete all 8 steps to unlock the report
+            🔒 Complete all 9 steps to unlock the report
             <div style={{ fontSize:11, color:"#374151", marginTop:5, fontWeight:400, lineHeight:1.7 }}>
               {!infoValid        && "• Fill in all customer & vehicle fields — check for spelling errors in Make/Model   "}
               {!allVehiclePhotos && "• Upload all 4 vehicle angle photos   "}
