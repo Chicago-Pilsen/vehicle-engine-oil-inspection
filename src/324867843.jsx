@@ -1572,7 +1572,12 @@ ${baSection("💧 Engine Oil Leak — Before &amp; After", [
         ))}
 
         <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-          <button onClick={handlePrint} style={{ width:"100%", background:"#1d4ed8", color:"#fff", border:"none", borderRadius:10, padding:"14px", fontSize:14, fontWeight:700, cursor:"pointer" }}>🖨️ Print Inspection Report</button>
+          <button onClick={handlePrint} style={{ flex:1, background:"#1d4ed8", color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", minWidth:130 }}>🖨️ Print Report</button>
+          <button onClick={handleEmail} style={{ flex:1, background:"#15803d", color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", minWidth:130 }}>📧 Email Customer</button>
+          <button onClick={() => { handlePrint(); setTimeout(handleEmail, 800); }} style={{ flex:"0 0 100%", background:"#7c3aed", color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer" }}>📋 Print + Email Both</button>
+          <div style={{ flex:"0 0 100%", fontSize:10, color:"#475569", textAlign:"center", lineHeight:1.5 }}>
+            If email doesn't open automatically, make sure a default email app is set on your device (Mail, Outlook, Gmail app).
+          </div>
         </div>
       </div>
     </div>
