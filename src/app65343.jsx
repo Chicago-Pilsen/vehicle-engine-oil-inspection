@@ -1828,7 +1828,7 @@ export default function App() {
         {/* ── STEP 4: Fluid Inspection ── */}
         <div style={{ background:"#1e293b", borderRadius:18, padding:22, marginBottom:16, border:`1.5px solid ${allFluidPhotos?"#22c55e":"#334155"}` }}>
           <SectionHeader step={4} title="Engine Oil Inspection" complete={allFluidPhotos}/>
-          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>Complete all inspection checks below.</p>
+          <p style={{ fontSize:12, color:"#64748b", margin:"0 0 14px", lineHeight:1.5 }}>Upload a photo of the dipstick, then complete all inspection checks below.</p>
 
           {/* Fluid cards */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:16, alignItems:"start" }}>
