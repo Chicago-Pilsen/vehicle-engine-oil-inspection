@@ -13,8 +13,7 @@ oil condition analysis, and generates service recommendations automatically.
 - 7-step guided inspection: Oil, Dipstick, Filter, Engine Bay, Leak check
 
 ## Tech Used
-HTML · CSS · JavaScript · [add React if used]
-
+React · Vite · JavaScript · CSS · Claude Vision AI
 ## Live Demo
 https://chicago-pilsen.github.io/vehicle-engine-oil-inspection/
 # React + Vite
