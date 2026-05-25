@@ -14,6 +14,7 @@ oil condition analysis, and generates service recommendations automatically.
 
 ## Tech Used
 React · Vite · JavaScript · CSS · Claude Vision AI
+- 📷 Camera odometer capture with Claude Vision AI
 ## Live Demo
 https://chicago-pilsen.github.io/vehicle-engine-oil-inspection/
 # React + Vite
